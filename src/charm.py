@@ -33,24 +33,26 @@ class GLAuthUtilsCharm(CharmBase):
         )
 
     def _on_start(self, event: StartEvent) -> None:
-        self.unit.status = MaintenanceStatus("Configuring the utils charm.")
+        self.unit.status = MaintenanceStatus("Configuring the glauth-utils charm.")
 
-        if not self.model.relations[AUXILIARY_INTEGRATION_NAME]:
+        if not (auxiliary_integrations := self.model.relations[AUXILIARY_INTEGRATION_NAME]):
             self.unit.status = BlockedStatus("Waiting for the required auxiliary integration.")
+            return
+
+        auxiliary_integration = auxiliary_integrations[0]
+        if not auxiliary_integration.data.get(auxiliary_integration.app):
+            self.unit.status = WaitingStatus("Waiting for the auxiliary data.")
             return
 
         self.unit.status = ActiveStatus()
 
     def _on_auxiliary_ready(self, event: AuxiliaryReadyEvent) -> None:
-        auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data(
+        self.unit.status = ActiveStatus()
+
+        auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data(  # noqa
             relation_id=event.relation.id
         )
-
-        if not auxiliary_data:
-            self.unit.status = WaitingStatus("Waiting for the auxiliary data.")
-            return
-
-        self.unit.status = ActiveStatus()
+        # TODO: do something with the auxiliary data
 
 
 if __name__ == "__main__":

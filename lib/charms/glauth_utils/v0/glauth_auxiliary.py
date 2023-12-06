@@ -1,9 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""
-
-# Juju Charm Library for the `glauth_auxiliary` Juju Interface
+"""# Juju Charm Library for the `glauth_auxiliary` Juju Interface.
 
 This juju charm library contains the Provider and Requirer classes for handling
 the `glauth_auxiliary` interface.
@@ -191,20 +189,12 @@ class AuxiliaryProvider(Object):
     @leader_unit
     def _on_relation_created(self, event: RelationCreatedEvent) -> None:
         """Handle the event emitted when an auxiliary integration is created."""
-
         self.on.auxiliary_requested.emit(event.relation)
 
     @leader_unit
-    def update_relation_app_data(
-        self, /, relation_id: int, data: AuxiliaryData
-    ) -> None:
+    def update_relation_app_data(self, /, relation_id: int, data: AuxiliaryData) -> None:
         """An API for the provider charm to provide the auxiliary data."""
-
-        relation = self.charm.model.get_relation(
-            self._relation_name, relation_id
-        )
-
-        if relation is None:
+        if not (relation := self.charm.model.get_relation(self._relation_name, relation_id)):
             return
 
         relation.data[self.app].update(asdict(data))
@@ -233,6 +223,8 @@ class AuxiliaryRequirer(Object):
     @leader_unit
     def _on_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handle the event emitted when auxiliary data is ready."""
+        if not event.relation.data.get(event.relation.app):
+            return
 
         self.on.auxiliary_ready.emit(event.relation)
 
@@ -241,17 +233,13 @@ class AuxiliaryRequirer(Object):
         /,
         relation_id: Optional[int] = None,
     ) -> Optional[AuxiliaryData]:
-        """An API for the requirer charm to consume the auxiliary data in
-        the application databag."""
-
-        relation = self.charm.model.get_relation(
-            self._relation_name, relation_id
-        )
-
-        if not relation:
+        """An API for the requirer charm to consume the auxiliary data."""
+        if not (relation := self.charm.model.get_relation(self._relation_name, relation_id)):
             return None
 
-        auxiliary_data = relation.data.get(relation.app)
+        if not (auxiliary_data := relation.data.get(relation.app)):
+            return None
+
         return (
             from_dict(
                 data_class=AuxiliaryData,
