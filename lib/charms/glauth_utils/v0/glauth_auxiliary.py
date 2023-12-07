@@ -52,6 +52,7 @@ interface in the `metadata.yaml`:
 requires:
   glauth-auxiliary:
     interface: glauth_auxiliary
+    limit: 1
 ```
 
 ## Provider Charm

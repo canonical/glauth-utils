@@ -14,3 +14,4 @@ description: |
 requires:
   glauth-auxiliary:
     interface: glauth_auxiliary
+    limit: 1
