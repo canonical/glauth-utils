@@ -7,9 +7,11 @@
 """A Juju Kubernetes charmed operator for GLAuth Utility Features."""
 
 import logging
+from pathlib import Path
 
+from action import apply_ldif
 from charms.glauth_utils.v0.glauth_auxiliary import AuxiliaryReadyEvent, AuxiliaryRequirer
-from ops.charm import CharmBase, StartEvent
+from ops.charm import ActionEvent, CharmBase, StartEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
@@ -32,6 +34,11 @@ class GLAuthUtilsCharm(CharmBase):
             self._on_auxiliary_ready,
         )
 
+        self.framework.observe(
+            self.on.apply_ldif_action,
+            self._on_apply_ldif_action,
+        )
+
     def _on_start(self, event: StartEvent) -> None:
         self.unit.status = MaintenanceStatus("Configuring the glauth-utils charm.")
 
@@ -49,10 +56,32 @@ class GLAuthUtilsCharm(CharmBase):
     def _on_auxiliary_ready(self, event: AuxiliaryReadyEvent) -> None:
         self.unit.status = ActiveStatus()
 
-        auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data(  # noqa
-            relation_id=event.relation.id
+    def _on_apply_ldif_action(self, event: ActionEvent) -> None:
+        if not isinstance(self.unit.status, ActiveStatus):
+            event.fail(f"The {self.app.name} is not ready yet.")
+            return
+
+        ldif_file = event.params.get("path")
+        if not Path(ldif_file).is_file():
+            event.fail(f"The LDIF file {ldif_file} does not exist.")
+            return
+
+        auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data()
+        dsn = (
+            f"postgresql+psycopg://"
+            f"{auxiliary_data.username}:"
+            f"{auxiliary_data.password}@"
+            f"{auxiliary_data.endpoint}/"
+            f"{auxiliary_data.database}"
         )
-        # TODO: do something with the auxiliary data
+
+        event.log("Applying LDIF file...")
+        try:
+            apply_ldif(ldif_file, dsn)
+        except Exception:
+            event.fail(f"Failed to apply the LDIF file: {ldif_file}.")
+            return
+        event.log(f"Successfully applied LDIF file: {ldif_file}.")
 
 
 if __name__ == "__main__":

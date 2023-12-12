@@ -1,0 +1,61 @@
+from typing import List, Optional
+
+from sqlalchemy import JSON, ForeignKey, Integer, SmallInteger, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, name="name")
+    uid_number: Mapped[int] = mapped_column(name="uidnumber")
+    gid_number: Mapped[int] = mapped_column(
+        ForeignKey("groups.gidnumber", onupdate="cascade"),
+        name="primarygroup",
+    )
+    other_groups: Mapped[Optional[str]] = mapped_column(name="othergroups")
+    given_name: Mapped[Optional[str]] = mapped_column(name="givenname")
+    surname: Mapped[Optional[str]] = mapped_column(name="sn")
+    email: Mapped[Optional[str]] = mapped_column(name="mail")
+    login_shell: Mapped[Optional[str]] = mapped_column(name="loginshell")
+    home_directory: Mapped[Optional[str]] = mapped_column(name="homedirectory")
+    disabled = mapped_column(SmallInteger, default=0)
+    password_sha256: Mapped[Optional[str]] = mapped_column(name="passsha256")
+    password_bcrypt: Mapped[Optional[str]] = mapped_column(name="passbcrypt")
+    otp_secret: Mapped[Optional[str]] = mapped_column(name="otpsecret")
+    yubi_key: Mapped[Optional[str]] = mapped_column(name="yubikey")
+    ssh_keys: Mapped[Optional[str]] = mapped_column(name="sshkeys")
+    custom_attributes: Mapped[Optional[dict]] = mapped_column(JSON, name="custattr")
+
+    group: Mapped["Group"] = relationship(back_populates="users")
+
+
+class Group(Base):
+    __tablename__ = "groups"
+
+    id = mapped_column(Integer, primary_key=True)
+    name: Mapped[str]
+    gid_number: Mapped[int] = mapped_column(name="gidnumber")
+    users: Mapped[List["User"]] = relationship(back_populates="group")
+
+
+class Capability(Base):
+    __tablename__ = "capabilities"
+
+    id = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(name="userid")
+    action: Mapped[str]
+    object: Mapped[str]
+
+
+class IncludeGroup(Base):
+    __tablename__ = "includegroups"
+
+    id = mapped_column(Integer, primary_key=True)
+    parent_group_id: Mapped[int] = mapped_column(name="parentgroupid")
+    include_group_id: Mapped[int] = mapped_column(name="includegroupid")
