@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from constant import LDIF_PARSER_IGNORED_ATTRIBUTES
-from operation import operation_registry
+from operation import OPERATIONS
 from parser import Parser
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -15,6 +15,6 @@ def apply_ldif(ldif_file: str | Path, dsn: str):
     engine = create_engine(dsn)
     with Session(engine) as session:
         for record in parser.all_records:
-            operation = operation_registry[record.op]
-            operation(session, record)
+            operation_cls = OPERATIONS[record.model]
+            operation_cls.get_registry(record.op)(operation_cls(), session, record)
         session.commit()

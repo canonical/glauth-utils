@@ -44,7 +44,7 @@ extend-ignore = [
     "D409",
     "D413",
 ]
-ignore = ["D100", "D101", "D102", "D103", "D107", "E501", "N818"]
+ignore = ["D100", "D101", "D102", "D103", "D105", "D107", "E501", "N818"]
 extend-exclude = ["__pycache__", "*.egg_info"]
 per-file-ignores = {"tests/*" = ["D100","D101","D102","D103","D104"]}
 
