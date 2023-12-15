@@ -1,6 +1,8 @@
+import operator
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable, Literal, Type
+from functools import wraps
+from typing import Any, Callable, List, Literal, Type
 
 from constant import (
     LDIF_SANITIZE_ATTRIBUTES,
@@ -12,8 +14,25 @@ from constant import (
 from database import Base, Group, User
 from ldif import LDIFRecordList
 
-IDENTIFIER_REGEX = re.compile(r"^(?P<model>cn|ou)=(?P<identifier>.*?),", re.IGNORECASE)
-PASSWORD_REGEX = re.compile(r"^{(?P<prefix>.*?)}(?P<password>.*$)", re.IGNORECASE)
+IDENTIFIER_REGEX = re.compile(
+    r"""
+    ^(?P<id_attribute>cn|ou)
+    =
+    (?P<identifier>.*?),
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+PASSWORD_REGEX = re.compile(
+    r"""
+    ^{(?P<prefix>.*?)}
+    (?P<password>.*$)
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+Processor = Callable[[str, dict, "Record"], None]
+
+processor_chain: List[Processor] = []
 
 
 @dataclass
@@ -25,24 +44,38 @@ class Record:
     custom_attributes: dict[str, Any] = field(default_factory=dict)
 
 
-Processor = Callable[[str, dict, Record], None]
+def chain_order(order: int):
+    def decorator(func: Processor):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        wrapper.order = order
+        processor_chain.append(wrapper)
+        processor_chain.sort(key=operator.attrgetter("order"))
+        return wrapper
+
+    return decorator
 
 
+@chain_order(order=1)
 def stringify_processor(dn: str, entry: dict, record: Record) -> None:
     for k, v in entry.items():
         entry[k] = v[0].decode("utf-8")
 
 
+@chain_order(order=2)
 def dn_processor(dn: str, entry: dict, record: Record) -> None:
     if not (matched := IDENTIFIER_REGEX.search(dn)):
         return
 
-    record.identifier = matched.group("identifier")
     record.model = (
-        User if matched.group("model").casefold() == USER_IDENTIFIER_ATTRIBUTE else Group
+        User if matched.group("id_attribute").casefold() == USER_IDENTIFIER_ATTRIBUTE else Group
     )
+    record.identifier = matched.group("identifier")
 
 
+@chain_order(order=3)
 def password_processor(dn: str, entry: dict, record: Record) -> None:
     if not (password := entry.get("userPassword")):
         return
@@ -57,6 +90,7 @@ def password_processor(dn: str, entry: dict, record: Record) -> None:
     entry.pop("userPassword", None)
 
 
+@chain_order(order=4)
 def operation_processor(dn: str, entry: dict, record: None) -> None:
     match entry.get("changetype"):
         case "modrdn" | "moddn" if "newsuperior" in entry:
@@ -82,6 +116,7 @@ def operation_processor(dn: str, entry: dict, record: None) -> None:
             record.op = OperationType.CREATE
 
 
+@chain_order(order=5)
 def attribute_processor(dn: str, entry: dict, record: Record) -> None:
     for sanitized_attribute in LDIF_SANITIZE_ATTRIBUTES:
         entry.pop(sanitized_attribute, None)
@@ -91,6 +126,7 @@ def attribute_processor(dn: str, entry: dict, record: Record) -> None:
     record.attributes = supported_attributes
 
 
+@chain_order(order=6)
 def custom_attribute_processor(dn: str, entry: dict, record: Record) -> None:
     unsupported_attributes = {k: v for k, v in entry.items() if k not in SUPPORTED_LDIF_ATTRIBUTES}
 
@@ -101,18 +137,10 @@ def custom_attribute_processor(dn: str, entry: dict, record: Record) -> None:
 class Parser(LDIFRecordList):
     def __init__(self, input_file, ignored_attr_types=None):
         super().__init__(input_file, ignored_attr_types)
-        self.processors: Iterable[Processor] = [
-            stringify_processor,
-            dn_processor,
-            password_processor,
-            operation_processor,
-            attribute_processor,
-            custom_attribute_processor,
-        ]
 
     def handle(self, dn, entry):
         record = Record()
-        for processor in self.processors:
+        for processor in processor_chain:
             processor(dn, entry, record)
 
         self.all_records.append(record)
