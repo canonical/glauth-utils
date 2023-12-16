@@ -1,4 +1,3 @@
-import json
 from abc import ABC, abstractmethod
 from typing import Callable, Type
 
@@ -91,7 +90,7 @@ class UserOperation(Operation):
 
             if record.custom_attributes:
                 obj.custom_attributes = {
-                    **json.loads(obj.custom_attributes),
+                    **obj.custom_attributes,
                     **record.custom_attributes,
                 }
 

@@ -1,7 +1,27 @@
+import json
 from typing import List, Optional
 
-from sqlalchemy import JSON, ForeignKey, Integer, SmallInteger, String
+from sqlalchemy import ForeignKey, Integer, SmallInteger, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.types import VARCHAR, TypeDecorator
+
+
+class JsonEncodeDict(TypeDecorator):
+    impl = VARCHAR
+
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            value = json.dumps(value)
+
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            value = json.loads(value)
+
+        return value
 
 
 class Base(DeclarativeBase):
@@ -30,7 +50,7 @@ class User(Base):
     otp_secret: Mapped[Optional[str]] = mapped_column(name="otpsecret")
     yubi_key: Mapped[Optional[str]] = mapped_column(name="yubikey")
     ssh_keys: Mapped[Optional[str]] = mapped_column(name="sshkeys")
-    custom_attributes: Mapped[Optional[dict]] = mapped_column(JSON, name="custattr")
+    custom_attributes: Mapped[Optional[dict]] = mapped_column(JsonEncodeDict, name="custattr")
 
     group: Mapped["Group"] = relationship(back_populates="users")
 
