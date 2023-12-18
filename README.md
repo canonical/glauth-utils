@@ -1,19 +1,61 @@
 # GLAuth Utility Kubernetes Charmed Operator
 
+![Python](https://img.shields.io/python/required-version-toml?label=Python&tomlFilePath=https://raw.githubusercontent.com/canonical/glauth-utils/main/pyproject.toml)
+[![Juju](https://img.shields.io/badge/Juju%20-3.0+-%23E95420)](https://github.com/juju/juju)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04-E95420?label=Ubuntu&logo=ubuntu&logoColor=white)
+[![License](https://img.shields.io/github/license/canonical/glauth-utils?label=License)](https://github.com/canonical/glauth-k8s-operator/blob/main/LICENSE)
+
 This repository holds a utility Kubernetes charmed operator
-for [GLAuth Kubernetes Charmed Operator](https://github.com/canonical/glauth-k8s-operator).
+for [GLAuth Kubernetes Charmed Operator](https://github.
+com/canonical/glauth-k8s-operator).
+
+It aims to supplement the `glauth-k8s` charmed operator by the followings:
+
+- Use the [LDIF](https://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format) to
+  apply data changes into the LDAP directory
 
 ## Usage
 
-TBD.
+The `glauth-utils` charmed operator can be deployed using the following command:
+
+```shell
+$ juju deploy glauth-utils --channel edge --trust
+```
 
 ## Integrations
 
-TBD.
+The `glauth-utils` charmed operator requires a Juju integration with the
+`glauth-k8s` charmed operator by using the `auxiliary` Juju interface:
+
+```shell
+$ juju integrate glauth-utils:auxiliary glauth-k8s:auxiliary
+```
+
+The following diagram illustrates the overall deployment architecture:
+
+![deployment](img/integration.png)
 
 ## Actions
 
-TBD.
+The `glauth-utils` charmed operator offers the following Juju actions.
+
+### `apply-ldif`
+
+The `apply-ldif` action helps load an LDIF file to apply any defined data
+changes into the `glauth-k8s` charmed operator's backend datastore (e.g.
+PostgreSQL database).
+
+```shell
+# 1. Transfer the LDIF file to the remote charm container in the leader unit
+$ juju scp -m <model> --container <charm-container> <path-to-ldif-file>
+<leader-unit>:<path-to-ldif-file-in-remote-container>
+
+# 2. Apply the LDIF file
+$ juju run <leader-unit> apply-ldif path=<path-to-ldif-file-in-remote-ccontainer>
+```
+
+> 📚 Please refer to the [LDIF sample file](samples/sample.ldif) to see what
+> directory update requests are supported in the charmed operator.
 
 ## Contributing
 
