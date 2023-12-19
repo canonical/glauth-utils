@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from sqlalchemy import ForeignKey, Integer, SmallInteger, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy.types import VARCHAR, TypeDecorator
+from sqlalchemy.types import TEXT, VARCHAR, TypeDecorator
 
 
 class JsonEncodeDict(TypeDecorator):
@@ -12,16 +12,22 @@ class JsonEncodeDict(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
-        if value is not None:
-            value = json.dumps(value)
-
-        return value
+        return json.dumps(value) if value is not None else None
 
     def process_result_value(self, value, dialect):
-        if value is not None:
-            value = json.loads(value)
+        return json.loads(value) if value is not None else None
 
-        return value
+
+class GroupSet(TypeDecorator):
+    impl = TEXT
+
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return ",".join(list(value)) if value else ""
+
+    def process_result_value(self, value, dialect):
+        return set(value.split(",")) if value else set()
 
 
 class Base(DeclarativeBase):
@@ -38,7 +44,7 @@ class User(Base):
         ForeignKey("groups.gidnumber", onupdate="cascade"),
         name="primarygroup",
     )
-    other_groups: Mapped[Optional[str]] = mapped_column(name="othergroups")
+    other_groups: Mapped[set] = mapped_column(GroupSet, name="othergroups")
     given_name: Mapped[Optional[str]] = mapped_column(name="givenname")
     surname: Mapped[Optional[str]] = mapped_column(name="sn")
     email: Mapped[Optional[str]] = mapped_column(name="mail")

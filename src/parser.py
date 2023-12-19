@@ -102,6 +102,10 @@ def operation_processor(dn: str, entry: dict, record: None) -> None:
             record.op = OperationType.UPDATE
             return
 
+        case "modify" if "memberUid" in entry:
+            record.op = OperationType.ATTACH if "add" in entry else OperationType.DETACH
+            return
+
         case "modify":
             record.op = OperationType.UPDATE
             if "delete" in entry:
@@ -128,10 +132,11 @@ def attribute_processor(dn: str, entry: dict, record: Record) -> None:
 
 @chain_order(order=6)
 def custom_attribute_processor(dn: str, entry: dict, record: Record) -> None:
-    unsupported_attributes = {k: v for k, v in entry.items() if k not in SUPPORTED_LDIF_ATTRIBUTES}
+    if record.model is not User:
+        return
 
-    if record.model is User:
-        record.custom_attributes = unsupported_attributes
+    unsupported_attributes = {k: v for k, v in entry.items() if k not in SUPPORTED_LDIF_ATTRIBUTES}
+    record.custom_attributes = unsupported_attributes
 
 
 class Parser(LDIFRecordList):

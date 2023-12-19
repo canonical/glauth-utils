@@ -142,6 +142,24 @@ class GroupOperation(Operation):
         )
         self.create(session, include_group_record)
 
+    @op_label(OperationType.ATTACH)
+    def attach(self, session: Session, record: Record) -> None:
+        group = self.select(session, record.model, criteria={"name": record.identifier}).first()
+
+        uid = record.attributes.get("memberUid")
+        user = self.select(session, User, criteria={"uid_number": int(uid)}).first()
+
+        user.other_groups = user.other_groups | {str(group.gid_number)}
+
+    @op_label(OperationType.DETACH)
+    def detach(self, session: Session, record: Record) -> None:
+        group = self.select(session, record.model, criteria={"name": record.identifier}).first()
+
+        uid = record.attributes.get("memberUid")
+        user = self.select(session, User, criteria={"uid_number": int(uid)}).first()
+
+        user.other_groups = user.other_groups - {str(group.gid_number)}
+
 
 OPERATIONS = {
     User: UserOperation,

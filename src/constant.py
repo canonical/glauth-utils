@@ -33,10 +33,7 @@ LDIF_TO_USER_MODEL_MAPPINGS = {
     "sshPublicKey": "ssh_keys",
 }
 
-LDIF_TO_GROUP_MODEL_MAPPINGS = {
-    "ou": "name",
-    "gidNumber": "gid_number",
-}
+LDIF_TO_GROUP_MODEL_MAPPINGS = {"ou": "name", "gidNumber": "gid_number", "memberUid": "member_uid"}
 
 LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS = {
     "parentGroup": "parent_group",
@@ -56,3 +53,5 @@ class OperationType(Enum):
     UPDATE = "update"
     DELETE = "delete"
     MOVE = "move"
+    ATTACH = "attach"
+    DETACH = "detach"
