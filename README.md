@@ -9,7 +9,7 @@ This repository holds a utility Kubernetes charmed operator
 for [GLAuth Kubernetes Charmed Operator](https://github.
 com/canonical/glauth-k8s-operator).
 
-It aims to supplement the `glauth-k8s` charmed operator by the followings:
+It aims to supplement the `glauth-k8s` charmed operator by the following:
 
 - Use the [LDIF](https://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format) to
   apply data changes into the LDAP directory

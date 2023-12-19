@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, Type
 
 from constant import LDIF_TO_GROUP_MODEL_MAPPINGS, LDIF_TO_USER_MODEL_MAPPINGS, OperationType
-from database import Base, Group, User
+from database import Base, Group, IncludeGroup, User
 from parser import Record
 from sqlalchemy import ScalarResult, select
 from sqlalchemy.orm import Session
@@ -124,7 +124,23 @@ class GroupOperation(Operation):
 
     @op_label(OperationType.MOVE)
     def move(self, session: Session, record: Record) -> None:
-        pass
+        group = self.select(session, record.model, criteria={"name": record.identifier}).first()
+        parent_group = self.select(
+            session, record.model, criteria={"name": record.attributes.get("ou")}
+        ).first()
+
+        if association := self.select(
+            session, IncludeGroup, criteria={"child_group": group}
+        ).first():
+            association.parent_group = parent_group
+            return
+
+        include_group_record = Record(
+            identifier="ou",
+            model=IncludeGroup,
+            attributes={"parentGroup": parent_group, "childGroup": group},
+        )
+        self.create(session, include_group_record)
 
 
 OPERATIONS = {

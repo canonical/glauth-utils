@@ -61,7 +61,25 @@ class Group(Base):
     id = mapped_column(Integer, primary_key=True)
     name: Mapped[str]
     gid_number: Mapped[int] = mapped_column(name="gidnumber")
+
     users: Mapped[List["User"]] = relationship(back_populates="group")
+
+
+class IncludeGroup(Base):
+    __tablename__ = "includegroups"
+
+    id = mapped_column(Integer, primary_key=True)
+    parent_group_id: Mapped[int] = mapped_column(
+        ForeignKey("groups.gidnumber", onupdate="cascade"),
+        name="parentgroupid",
+    )
+    child_group_id: Mapped[int] = mapped_column(
+        ForeignKey("groups.gidnumber", onupdate="cascade"),
+        name="includegroupid",
+    )
+
+    parent_group: Mapped["Group"] = relationship("Group", foreign_keys=[parent_group_id])
+    child_group: Mapped["Group"] = relationship("Group", foreign_keys=[child_group_id])
 
 
 class Capability(Base):
@@ -71,11 +89,3 @@ class Capability(Base):
     user_id: Mapped[int] = mapped_column(name="userid")
     action: Mapped[str]
     object: Mapped[str]
-
-
-class IncludeGroup(Base):
-    __tablename__ = "includegroups"
-
-    id = mapped_column(Integer, primary_key=True)
-    parent_group_id: Mapped[int] = mapped_column(name="parentgroupid")
-    include_group_id: Mapped[int] = mapped_column(name="includegroupid")

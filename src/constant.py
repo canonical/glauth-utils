@@ -38,6 +38,11 @@ LDIF_TO_GROUP_MODEL_MAPPINGS = {
     "gidNumber": "gid_number",
 }
 
+LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS = {
+    "parentGroup": "parent_group",
+    "childGroup": "child_group",
+}
+
 SUPPORTED_LDIF_ATTRIBUTES = (LDIF_TO_USER_MODEL_MAPPINGS | LDIF_TO_GROUP_MODEL_MAPPINGS).keys()
 
 PASSWORD_ALGORITHM_REGISTRY = {
