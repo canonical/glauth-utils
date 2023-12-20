@@ -19,7 +19,7 @@ LDIF_MODEL_MAPPINGS = {
 }
 
 
-def op_method_register(cls: "Operation"):
+def op_method_register(cls: Type["Operation"]):
     for method_name in dir(cls):
         method = getattr(cls, method_name)
         if hasattr(method, "_op"):

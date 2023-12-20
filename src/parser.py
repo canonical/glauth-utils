@@ -2,7 +2,7 @@ import operator
 import re
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Any, Callable, List, Literal, Type
+from typing import Any, Callable, List, Type
 
 from constant import (
     LDIF_SANITIZE_ATTRIBUTES,
@@ -37,8 +37,8 @@ processor_chain: List[Processor] = []
 
 @dataclass
 class Record:
-    identifier: Literal["cn", "ou"] = USER_IDENTIFIER_ATTRIBUTE
-    model: Type[Base] = Type[User]
+    identifier: str = USER_IDENTIFIER_ATTRIBUTE
+    model: Type[Base] = User
     op: OperationType = OperationType.CREATE
     attributes: dict[str, Any] = field(default_factory=dict)
     custom_attributes: dict[str, Any] = field(default_factory=dict)
@@ -92,11 +92,16 @@ def password_processor(dn: str, entry: dict, record: Record) -> None:
 
 
 @chain_order(order=4)
-def operation_processor(dn: str, entry: dict, record: None) -> None:
+def operation_processor(dn: str, entry: dict, record: Record) -> None:
     match entry.get("changetype"):
         case "modrdn" | "moddn" if "newsuperior" in entry:
             record.op = OperationType.MOVE
-            entry["ou"] = IDENTIFIER_REGEX.search(entry["newsuperior"]).group("identifier")
+            if not (matched := IDENTIFIER_REGEX.search(entry["newsuperior"])):
+                raise ValueError(
+                    f"Invalid entry attribute in the LDIF file: {entry['newsuperior']}"
+                )
+
+            entry["ou"] = matched.group("identifier")
             return
 
         case "modrdn" | "moddn" if "newrdn" in entry:
