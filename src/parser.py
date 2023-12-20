@@ -61,7 +61,8 @@ def chain_order(order: int):
 @chain_order(order=1)
 def stringify_processor(dn: str, entry: dict, record: Record) -> None:
     for k, v in entry.items():
-        entry[k] = v[0].decode("utf-8")
+        decoded = [i.decode("utf-8") for i in v]
+        entry[k] = decoded if len(v) > 1 else decoded[0]
 
 
 @chain_order(order=2)

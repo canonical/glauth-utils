@@ -1,15 +1,21 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Type
 
-from constant import LDIF_TO_GROUP_MODEL_MAPPINGS, LDIF_TO_USER_MODEL_MAPPINGS, OperationType
+from constant import (
+    LDIF_TO_GROUP_MODEL_MAPPINGS,
+    LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS,
+    LDIF_TO_USER_MODEL_MAPPINGS,
+    OperationType,
+)
 from database import Base, Group, IncludeGroup, User
 from parser import Record
-from sqlalchemy import ScalarResult, select
+from sqlalchemy import ColumnExpressionArgument, ScalarResult, select
 from sqlalchemy.orm import Session
 
 LDIF_MODEL_MAPPINGS = {
     User: LDIF_TO_USER_MODEL_MAPPINGS,
     Group: LDIF_TO_GROUP_MODEL_MAPPINGS,
+    IncludeGroup: LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS,
 }
 
 
@@ -40,8 +46,10 @@ class Operation(ABC):
     def get_registry(cls, op: OperationType):
         return cls._op_registry.get(op)
 
-    def select(self, session: Session, model: Type[Base], criteria: dict) -> ScalarResult[Base]:
-        res = session.scalars(select(model).filter_by(**criteria))
+    def select(
+        self, session: Session, model: Type[Base], *criteria: ColumnExpressionArgument
+    ) -> ScalarResult[Base]:
+        res = session.scalars(select(model).filter(*criteria))
         return res
 
     def create(self, session: Session, record: Record) -> None:
@@ -52,16 +60,19 @@ class Operation(ABC):
         session.add(obj)
 
     def update(self, session: Session, record: Record) -> None:
-        attribute_mapping = LDIF_MODEL_MAPPINGS[record.model]
+        if not (
+            obj := self.select(session, record.model, record.model.name == record.identifier)
+        ).first():
+            return
 
-        obj = self.select(session, record.model, criteria={"name": record.identifier}).first()
-        if obj:
-            for attr, value in record.attributes.items():
-                setattr(obj, attribute_mapping[attr], value)
+        attribute_mapping = LDIF_MODEL_MAPPINGS[record.model]
+        for attr, value in record.attributes.items():
+            setattr(obj, attribute_mapping[attr], value)
 
     def delete(self, session: Session, record: Record) -> None:
-        obj = self.select(session, record.model, criteria={"name": record.identifier}).first()
-        if obj:
+        if obj := self.select(
+            session, record.model, record.model.name == record.identifier
+        ).first():
             session.delete(obj)
 
     @abstractmethod
@@ -83,29 +94,29 @@ class UserOperation(Operation):
 
     @op_label(OperationType.UPDATE)
     def update(self, session: Session, record: Record) -> None:
-        obj = self.select(session, record.model, criteria={"name": record.identifier}).first()
-        if obj:
-            for attr, value in record.attributes.items():
-                setattr(obj, LDIF_TO_USER_MODEL_MAPPINGS[attr], value)
+        if not (obj := self.select(session, User, User.name == record.identifier).first()):
+            return
 
-            if record.custom_attributes:
-                obj.custom_attributes = {
-                    **obj.custom_attributes,
-                    **record.custom_attributes,
-                }
+        for attr, value in record.attributes.items():
+            setattr(obj, LDIF_TO_USER_MODEL_MAPPINGS[attr], value)
+
+        if record.custom_attributes:
+            obj.custom_attributes = {
+                **obj.custom_attributes,
+                **record.custom_attributes,
+            }
 
     @op_label(OperationType.DELETE)
     def delete(self, session: Session, record: Record) -> None:
-        super().delete(session, Record)
+        super().delete(session, record)
 
     @op_label(OperationType.MOVE)
     def move(self, session: Session, record: Record) -> None:
-        obj = self.select(session, record.model, criteria={"name": record.identifier}).first()
-        if obj:
-            group = self.select(
-                session, Group, criteria={"name": record.attributes.get("ou")}
-            ).first()
-            obj.group = group
+        if not (obj := self.select(session, User, User.name == record.identifier).first()):
+            return
+
+        group = self.select(session, Group, Group.name == record.attributes.get("ou"))
+        obj.group = group
 
 
 @op_method_register
@@ -124,13 +135,13 @@ class GroupOperation(Operation):
 
     @op_label(OperationType.MOVE)
     def move(self, session: Session, record: Record) -> None:
-        group = self.select(session, record.model, criteria={"name": record.identifier}).first()
+        group = self.select(session, Group, Group.name == record.identifier).first()
         parent_group = self.select(
-            session, record.model, criteria={"name": record.attributes.get("ou")}
+            session, Group, Group.name == record.attributes.get("ou")
         ).first()
 
         if association := self.select(
-            session, IncludeGroup, criteria={"child_group": group}
+            session, IncludeGroup, IncludeGroup.child_group == group
         ).first():
             association.parent_group = parent_group
             return
@@ -144,21 +155,23 @@ class GroupOperation(Operation):
 
     @op_label(OperationType.ATTACH)
     def attach(self, session: Session, record: Record) -> None:
-        group = self.select(session, record.model, criteria={"name": record.identifier}).first()
+        if not (group := self.select(session, Group, Group.name == record.identifier).first()):
+            return
 
-        uid = record.attributes.get("memberUid")
-        user = self.select(session, User, criteria={"uid_number": int(uid)}).first()
-
-        user.other_groups = user.other_groups | {str(group.gid_number)}
+        uid_numbers = [int(uid) for uid in record.attributes.get("memberUid")]
+        users = self.select(session, User, User.uid_number.in_(uid_numbers)).all()
+        for user in users:
+            user.other_groups = user.other_groups | {str(group.gid_number)}
 
     @op_label(OperationType.DETACH)
     def detach(self, session: Session, record: Record) -> None:
-        group = self.select(session, record.model, criteria={"name": record.identifier}).first()
+        if not (group := self.select(session, Group, Group.name == record.identifier).first()):
+            return
 
-        uid = record.attributes.get("memberUid")
-        user = self.select(session, User, criteria={"uid_number": int(uid)}).first()
-
-        user.other_groups = user.other_groups - {str(group.gid_number)}
+        uid_numbers = [int(uid) for uid in record.attributes.get("memberUid")]
+        users = self.select(session, User, User.uid_number.in_(uid_numbers)).all()
+        for user in users:
+            user.other_groups = user.other_groups - {str(group.gid_number)}
 
 
 OPERATIONS = {
