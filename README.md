@@ -52,11 +52,18 @@ $ juju scp -m <model> --container <charm-container> <path-to-ldif-file>
 <leader-unit>:<path-to-ldif-file-in-remote-container>
 
 # 2. Apply the LDIF file
-$ juju run <leader-unit> apply-ldif path=<path-to-ldif-file-in-remote-ccontainer>
+$ juju run <leader-unit> apply-ldif path=<path-to-ldif-file-in-remote-container>
 ```
 
 > 📚 Please refer to the [LDIF samples](SAMPLES.md) to see what directory update
 > requests are supported in the charmed operator.
+
+## More Information
+
+The following diagram shows the database schema used by the `glauth-k8s`
+charmed operator's backend datastore.
+
+![database_schema](img/database_schema_diagram.svg)
 
 ## Contributing
 

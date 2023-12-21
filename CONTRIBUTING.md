@@ -20,10 +20,25 @@ $ tox -e unit          # unit tests
 $ tox -e integration   # integration tests
 ```
 
+> ⚠️ **NOTE**
+>
+> The `python-openldap` dependency requires several software packages to be
+> install at the first hand. Please run `tox -e build-prerequisites` before
+> running any tests.
+
 ## Build the charm
 
 Build the charm in this git repository using:
 
 ```shell
 $ charmcraft pack -v
+```
+
+## Render the database schema diagram
+
+The following command generates an SVG diagram of the database schema used by
+the backend datastore.
+
+```shell
+$ tox -e render-database-diagram
 ```
