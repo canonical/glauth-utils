@@ -4,6 +4,7 @@
 [![Juju](https://img.shields.io/badge/Juju%20-3.0+-%23E95420)](https://github.com/juju/juju)
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04-E95420?label=Ubuntu&logo=ubuntu&logoColor=white)
 [![License](https://img.shields.io/github/license/canonical/glauth-utils?label=License)](https://github.com/canonical/glauth-k8s-operator/blob/main/LICENSE)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 This repository holds a utility Kubernetes charmed operator
 for [GLAuth Kubernetes Charmed Operator](https://github.
@@ -54,8 +55,8 @@ $ juju scp -m <model> --container <charm-container> <path-to-ldif-file>
 $ juju run <leader-unit> apply-ldif path=<path-to-ldif-file-in-remote-ccontainer>
 ```
 
-> 📚 Please refer to the [LDIF sample file](samples/sample.ldif) to see what
-> directory update requests are supported in the charmed operator.
+> 📚 Please refer to the [LDIF samples](SAMPLES.md) to see what directory update
+> requests are supported in the charmed operator.
 
 ## Contributing
 

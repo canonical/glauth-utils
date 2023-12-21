@@ -38,7 +38,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String, name="name")
+    name: Mapped[str] = mapped_column(String, name="name", unique=True)
     uid_number: Mapped[int] = mapped_column(name="uidnumber")
     gid_number: Mapped[int] = mapped_column(
         ForeignKey("groups.gidnumber", onupdate="cascade"),
@@ -65,7 +65,7 @@ class Group(Base):
     __tablename__ = "groups"
 
     id = mapped_column(Integer, primary_key=True)
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(name="name", unique=True)
     gid_number: Mapped[int] = mapped_column(name="gidnumber")
 
     users: Mapped[List["User"]] = relationship(back_populates="group")

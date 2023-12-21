@@ -3,8 +3,8 @@
 You can use the environments created by `tox` for development:
 
 ```shell
-$ tox --notest -e unit
-$ source .tox/unit/bin/activate
+$ tox -e dev
+$ source .tox/dev/bin/activate
 ```
 
 ## Testing
@@ -25,5 +25,5 @@ $ tox -e integration   # integration tests
 Build the charm in this git repository using:
 
 ```shell
-charmcraft pack -v
+$ charmcraft pack -v
 ```
