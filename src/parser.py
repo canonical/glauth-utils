@@ -2,7 +2,7 @@ import operator
 import re
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Any, Callable, List, Type
+from typing import Any, Callable, Final, Iterable, List, Optional, TextIO, Type
 
 from constant import (
     LDIF_SANITIZE_ATTRIBUTES,
@@ -14,7 +14,7 @@ from constant import (
 from database import Base, Group, User
 from ldif import LDIFRecordList
 
-IDENTIFIER_REGEX = re.compile(
+IDENTIFIER_REGEX: Final = re.compile(
     r"""
     ^(?P<id_attribute>cn|ou)
     =
@@ -22,7 +22,7 @@ IDENTIFIER_REGEX = re.compile(
     """,
     re.IGNORECASE | re.VERBOSE,
 )
-PASSWORD_REGEX = re.compile(
+PASSWORD_REGEX: Final = re.compile(
     r"""
     ^{(?P<prefix>.*?)}
     (?P<password>.*$)
@@ -44,10 +44,10 @@ class Record:
     custom_attributes: dict[str, Any] = field(default_factory=dict)
 
 
-def chain_order(order: int):
-    def decorator(func: Processor):
+def chain_order(order: int) -> Callable:
+    def decorator(func: Processor) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
 
         wrapper.order = order
@@ -146,10 +146,10 @@ def custom_attribute_processor(dn: str, entry: dict, record: Record) -> None:
 
 
 class Parser(LDIFRecordList):
-    def __init__(self, input_file, ignored_attr_types=None):
+    def __init__(self, input_file: TextIO, ignored_attr_types: Optional[Iterable[str]] = None):
         super().__init__(input_file, ignored_attr_types)
 
-    def handle(self, dn, entry):
+    def handle(self, dn: str, entry: dict) -> None:
         record = Record()
         for processor in processor_chain:
             processor(dn, entry, record)

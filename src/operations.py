@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Type
+from typing import Callable, Final, Optional, Type, TypeVar
 
 from constant import (
     LDIF_TO_GROUP_MODEL_MAPPINGS,
@@ -18,8 +18,10 @@ LDIF_MODEL_MAPPINGS = {
     IncludeGroup: LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS,
 }
 
+Method = TypeVar("Method", bound=Callable)
 
-def op_method_register(cls: Type["Operation"]):
+
+def op_method_register(cls: Type["Operation"]) -> Type["Operation"]:
     for method_name in dir(cls):
         method = getattr(cls, method_name)
         if hasattr(method, "_op"):
@@ -28,7 +30,7 @@ def op_method_register(cls: Type["Operation"]):
 
 
 def op_label(op: OperationType) -> Callable:
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Method) -> Method:
         func._op = op
         return func
 
@@ -43,7 +45,7 @@ class Operation(ABC):
         cls._op_registry = {}
 
     @classmethod
-    def get_registry(cls, op: OperationType):
+    def get_registry(cls, op: OperationType) -> Optional[Callable]:
         return cls._op_registry.get(op)
 
     def select(
@@ -174,7 +176,7 @@ class GroupOperation(Operation):
             user.other_groups = user.other_groups - {str(group.gid_number)}
 
 
-OPERATIONS = {
+OPERATIONS: Final[dict] = {
     User: UserOperation,
     Group: GroupOperation,
 }

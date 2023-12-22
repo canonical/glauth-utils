@@ -1,6 +1,7 @@
 # Contributing
 
-You can use the environments created by `tox` for development:
+You can use the environments created by `tox` for development. It helps
+install `pre-commit` hooks and `mypy` type checker.
 
 ```shell
 $ tox -e dev

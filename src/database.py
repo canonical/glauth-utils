@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey, Integer, SmallInteger, String
+from sqlalchemy import Dialect, ForeignKey, Integer, SmallInteger, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import TEXT, VARCHAR, TypeDecorator
 
@@ -11,10 +11,10 @@ class JsonEncodeDict(TypeDecorator):
 
     cache_ok = True
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value: Optional[dict], dialect: Dialect):
         return json.dumps(value) if value is not None else None
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: Optional[str], dialect: Dialect):
         return json.loads(value) if value is not None else None
 
 
@@ -23,10 +23,10 @@ class GroupSet(TypeDecorator):
 
     cache_ok = True
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value: Optional[set], dialect: Dialect):
         return ",".join(list(value)) if value else ""
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: Optional[str], dialect: Dialect):
         return set(value.split(",")) if value else set()
 
 
@@ -93,5 +93,5 @@ class Capability(Base):
 
     id = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(name="userid")
-    action: Mapped[str]
+    action: Mapped[str] = mapped_column(default="search")
     object: Mapped[str]

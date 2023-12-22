@@ -1,12 +1,14 @@
+from collections.abc import KeysView
 from enum import Enum
+from typing import Final
 
-USER_IDENTIFIER_ATTRIBUTE = "cn"
+USER_IDENTIFIER_ATTRIBUTE: Final[str] = "cn"
 
-GROUP_IDENTIFIER_ATTRIBUTE = "ou"
+GROUP_IDENTIFIER_ATTRIBUTE: Final[str] = "ou"
 
-LDIF_PARSER_IGNORED_ATTRIBUTES = ("objectClass",)
+LDIF_PARSER_IGNORED_ATTRIBUTES: Final[tuple[str, ...]] = ("objectClass",)
 
-LDIF_SANITIZE_ATTRIBUTES = (
+LDIF_SANITIZE_ATTRIBUTES: Final[tuple[str, ...]] = (
     "changetype",
     "add",
     "replace",
@@ -17,7 +19,7 @@ LDIF_SANITIZE_ATTRIBUTES = (
     "objectClass",
 )
 
-LDIF_TO_USER_MODEL_MAPPINGS = {
+LDIF_TO_USER_MODEL_MAPPINGS: Final[dict[str, str]] = {
     "cn": "name",
     "uidNumber": "uid_number",
     "gidNumber": "gid_number",
@@ -33,16 +35,22 @@ LDIF_TO_USER_MODEL_MAPPINGS = {
     "sshPublicKey": "ssh_keys",
 }
 
-LDIF_TO_GROUP_MODEL_MAPPINGS = {"ou": "name", "gidNumber": "gid_number", "memberUid": "member_uid"}
+LDIF_TO_GROUP_MODEL_MAPPINGS: Final[dict[str, str]] = {
+    "ou": "name",
+    "gidNumber": "gid_number",
+    "memberUid": "member_uid",
+}
 
-LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS = {
+LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS: Final[dict[str, str]] = {
     "parentGroup": "parent_group",
     "childGroup": "child_group",
 }
 
-SUPPORTED_LDIF_ATTRIBUTES = (LDIF_TO_USER_MODEL_MAPPINGS | LDIF_TO_GROUP_MODEL_MAPPINGS).keys()
+SUPPORTED_LDIF_ATTRIBUTES: Final[KeysView] = (
+    LDIF_TO_USER_MODEL_MAPPINGS | LDIF_TO_GROUP_MODEL_MAPPINGS
+).keys()
 
-PASSWORD_ALGORITHM_REGISTRY = {
+PASSWORD_ALGORITHM_REGISTRY: Final[dict[str, str]] = {
     "sha256": "passwordSha256",
     "bcrypt": "passwordBcrypt",
 }
