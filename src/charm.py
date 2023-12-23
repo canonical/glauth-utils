@@ -10,7 +10,11 @@ import logging
 from pathlib import Path
 
 from action import apply_ldif
-from charms.glauth_utils.v0.glauth_auxiliary import AuxiliaryReadyEvent, AuxiliaryRequirer
+from charms.glauth_utils.v0.glauth_auxiliary import (
+    AuxiliaryReadyEvent,
+    AuxiliaryRequirer,
+    AuxiliaryUnavailableEvent,
+)
 from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ops.charm import ActionEvent, CharmBase, StartEvent
 from ops.main import main
@@ -34,6 +38,10 @@ class GLAuthUtilsCharm(CharmBase):
             self.auxiliary_requirer.on.auxiliary_ready,
             self._on_auxiliary_ready,
         )
+        self.framework.observe(
+            self.auxiliary_requirer.on.auxiliary_unavailable,
+            self._on_auxiliary_unavailable,
+        )
 
         self.framework.observe(
             self.on.apply_ldif_action,
@@ -56,6 +64,9 @@ class GLAuthUtilsCharm(CharmBase):
 
     def _on_auxiliary_ready(self, event: AuxiliaryReadyEvent) -> None:
         self.unit.status = ActiveStatus()
+
+    def _on_auxiliary_unavailable(self, event: AuxiliaryUnavailableEvent) -> None:
+        self.unit.status = BlockedStatus("Waiting for the required auxiliary integration.")
 
     def _on_apply_ldif_action(self, event: ActionEvent) -> None:
         if not isinstance(self.unit.status, ActiveStatus):
