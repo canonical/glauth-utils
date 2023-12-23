@@ -12,6 +12,7 @@ from constant import (
     OperationType,
 )
 from database import Base, Group, User
+from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ldif import LDIFRecordList
 
 IDENTIFIER_REGEX: Final = re.compile(
@@ -68,7 +69,7 @@ def stringify_processor(dn: str, entry: dict, record: Record) -> None:
 @chain_order(order=2)
 def dn_processor(dn: str, entry: dict, record: Record) -> None:
     if not (matched := IDENTIFIER_REGEX.search(dn)):
-        return
+        raise InvalidDistinguishedNameError(f"Invalid DN: {dn}")
 
     record.model = (
         User if matched.group("id_attribute").casefold() == USER_IDENTIFIER_ATTRIBUTE else Group
@@ -82,7 +83,7 @@ def password_processor(dn: str, entry: dict, record: Record) -> None:
         return
 
     if not (matched := PASSWORD_REGEX.search(password)):
-        return
+        raise InvalidAttributeValueError(f"Invalid password for DN: {dn}")
 
     prefix = matched.group("prefix").casefold()
     hashed_password = matched.group("password")
@@ -97,8 +98,8 @@ def operation_processor(dn: str, entry: dict, record: Record) -> None:
         case "modrdn" | "moddn" if "newsuperior" in entry:
             record.op = OperationType.MOVE
             if not (matched := IDENTIFIER_REGEX.search(entry["newsuperior"])):
-                raise ValueError(
-                    f"Invalid entry attribute in the LDIF file: {entry['newsuperior']}"
+                raise InvalidAttributeValueError(
+                    f"Invalid attribute: {entry['newsuperior']} for DN: {dn}"
                 )
 
             entry["ou"] = matched.group("identifier")

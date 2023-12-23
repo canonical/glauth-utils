@@ -11,6 +11,7 @@ from pathlib import Path
 
 from action import apply_ldif
 from charms.glauth_utils.v0.glauth_auxiliary import AuxiliaryReadyEvent, AuxiliaryRequirer
+from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ops.charm import ActionEvent, CharmBase, StartEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
@@ -78,10 +79,12 @@ class GLAuthUtilsCharm(CharmBase):
         event.log("Applying LDIF file...")
         try:
             apply_ldif(ldif_file, dsn)
-        except Exception:
-            event.fail(f"Failed to apply the LDIF file: {ldif_file}.")
-            return
-        event.log(f"Successfully applied LDIF file: {ldif_file}.")
+        except InvalidAttributeValueError | InvalidDistinguishedNameError as e:
+            event.fail(f"Failed to parse the LDIF file: {e}")
+        except Exception as e:
+            event.fail(f"Failed to apply the LDIF file: {e}")
+        else:
+            event.log("Successfully applied LDIF file.")
 
 
 if __name__ == "__main__":

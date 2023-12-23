@@ -63,8 +63,10 @@ class Operation(ABC):
 
     def update(self, session: Session, record: Record) -> None:
         if not (
-            obj := self.select(session, record.model, record.model.name == record.identifier)
-        ).first():
+            obj := self.select(
+                session, record.model, record.model.name == record.identifier
+            ).first()
+        ):
             return
 
         attribute_mapping = LDIF_MODEL_MAPPINGS[record.model]
