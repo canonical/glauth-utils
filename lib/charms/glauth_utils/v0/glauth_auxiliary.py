@@ -146,7 +146,7 @@ def leader_unit(func: Callable) -> Callable:
         obj: Union["AuxiliaryProvider", "AuxiliaryRequirer"],
         *args: Any,
         **kwargs: Any,
-    ) -> Optional[Any]:
+    ) -> Any:
         if not obj.unit.is_leader():
             return None
 
@@ -236,6 +236,10 @@ class AuxiliaryRequirer(Object):
         self.framework.observe(
             self.charm.on[self._relation_name].relation_changed,
             self._on_relation_changed,
+        )
+        self.framework.observe(
+            self.charm.on[self._relation_name].relation_broken,
+            self._on_auxiliary_relation_broken,
         )
 
     @leader_unit

@@ -1,7 +1,6 @@
 /venv
 *.py[cod]
 *.charm
-*.md
 .github/
 .tox/
 img/

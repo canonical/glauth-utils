@@ -15,14 +15,13 @@ from charms.glauth_utils.v0.glauth_auxiliary import (
     AuxiliaryRequirer,
     AuxiliaryUnavailableEvent,
 )
+from constants import AUXILIARY_INTEGRATION_NAME
 from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ops.charm import ActionEvent, CharmBase, StartEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
 logger = logging.getLogger(__name__)
-
-AUXILIARY_INTEGRATION_NAME = "glauth-auxiliary"
 
 
 class GLAuthUtilsCharm(CharmBase):
@@ -42,6 +41,7 @@ class GLAuthUtilsCharm(CharmBase):
             self.auxiliary_requirer.on.auxiliary_unavailable,
             self._on_auxiliary_unavailable,
         )
+        self.auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data()
 
         self.framework.observe(
             self.on.apply_ldif_action,
@@ -78,24 +78,29 @@ class GLAuthUtilsCharm(CharmBase):
             event.fail(f"The LDIF file {ldif_file} does not exist.")
             return
 
-        auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data()
-        dsn = (
+        if not self.auxiliary_data:
+            event.fail("The auxiliary data is not ready yet.")
+            return
+
+        database = (
             f"postgresql+psycopg://"
-            f"{auxiliary_data.username}:"
-            f"{auxiliary_data.password}@"
-            f"{auxiliary_data.endpoint}/"
-            f"{auxiliary_data.database}"
+            f"{self.auxiliary_data.username}:"
+            f"{self.auxiliary_data.password}@"
+            f"{self.auxiliary_data.endpoint}/"
+            f"{self.auxiliary_data.database}"
         )
 
         event.log("Applying LDIF file...")
         try:
-            apply_ldif(ldif_file, dsn)
-        except InvalidAttributeValueError | InvalidDistinguishedNameError as e:
-            event.fail(f"Failed to parse the LDIF file: {e}")
+            apply_ldif(ldif_file, database)
+        except (InvalidAttributeValueError, InvalidDistinguishedNameError) as e:
+            event.log("Failed to parse the LDIF file. See more details using juju show-operation.")
+            event.fail(f"The failed action is caused by: {e}")
         except Exception as e:
-            event.fail(f"Failed to apply the LDIF file: {e}")
+            event.log("Failed to apply the LDIF file. See more details using juju show-operation.")
+            event.fail(f"The failed action is caused by: {e}")
         else:
-            event.log("Successfully applied LDIF file.")
+            event.log("Successfully applied the LDIF file.")
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ from collections.abc import KeysView
 from enum import Enum
 from typing import Final
 
+AUXILIARY_INTEGRATION_NAME = "glauth-auxiliary"
+
 USER_IDENTIFIER_ATTRIBUTE: Final[str] = "cn"
 
 GROUP_IDENTIFIER_ATTRIBUTE: Final[str] = "ou"

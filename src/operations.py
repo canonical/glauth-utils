@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Final, Optional, Type, TypeVar
 
-from constant import (
+from constants import (
     LDIF_TO_GROUP_MODEL_MAPPINGS,
     LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS,
     LDIF_TO_USER_MODEL_MAPPINGS,
@@ -29,7 +29,7 @@ def op_method_register(cls: Type["Operation"]) -> Type["Operation"]:
     return cls
 
 
-def op_label(op: OperationType) -> Callable:
+def op_label(op: OperationType) -> Callable[[Method], Method]:
     def decorator(func: Method) -> Method:
         func._op = op
         return func
@@ -119,7 +119,7 @@ class UserOperation(Operation):
         if not (obj := self.select(session, User, User.name == record.identifier).first()):
             return
 
-        group = self.select(session, Group, Group.name == record.attributes.get("ou"))
+        group = self.select(session, Group, Group.name == record.attributes.get("ou")).first()
         obj.group = group
 
 
@@ -162,7 +162,11 @@ class GroupOperation(Operation):
         if not (group := self.select(session, Group, Group.name == record.identifier).first()):
             return
 
-        uid_numbers = [int(uid) for uid in record.attributes.get("memberUid")]
+        member_uid = record.attributes["memberUid"]
+        if not isinstance(member_uid, list):
+            member_uid = [member_uid]
+
+        uid_numbers = [int(uid) for uid in member_uid]
         users = self.select(session, User, User.uid_number.in_(uid_numbers)).all()
         for user in users:
             user.other_groups = user.other_groups | {str(group.gid_number)}
@@ -172,7 +176,11 @@ class GroupOperation(Operation):
         if not (group := self.select(session, Group, Group.name == record.identifier).first()):
             return
 
-        uid_numbers = [int(uid) for uid in record.attributes.get("memberUid")]
+        member_uid = record.attributes["memberUid"]
+        if not isinstance(member_uid, list):
+            member_uid = [member_uid]
+
+        uid_numbers = [int(uid) for uid in member_uid]
         users = self.select(session, User, User.uid_number.in_(uid_numbers)).all()
         for user in users:
             user.other_groups = user.other_groups - {str(group.gid_number)}

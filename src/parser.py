@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from functools import wraps
 from typing import Any, Callable, Final, Iterable, List, Optional, TextIO, Type
 
-from constant import (
+from constants import (
     LDIF_SANITIZE_ATTRIBUTES,
     PASSWORD_ALGORITHM_REGISTRY,
     SUPPORTED_LDIF_ATTRIBUTES,
@@ -19,7 +19,8 @@ IDENTIFIER_REGEX: Final = re.compile(
     r"""
     ^(?P<id_attribute>cn|ou)
     =
-    (?P<identifier>.*?),
+    (?P<identifier>.*?)
+    ,
     """,
     re.IGNORECASE | re.VERBOSE,
 )
@@ -45,8 +46,8 @@ class Record:
     custom_attributes: dict[str, Any] = field(default_factory=dict)
 
 
-def chain_order(order: int) -> Callable:
-    def decorator(func: Processor) -> Callable:
+def chain_order(order: int) -> Callable[[Processor], Processor]:
+    def decorator(func: Processor) -> Processor:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
@@ -107,10 +108,21 @@ def operation_processor(dn: str, entry: dict, record: Record) -> None:
 
         case "modrdn" | "moddn" if "newrdn" in entry:
             record.op = OperationType.UPDATE
+            *_, identifier = entry["newrdn"].partition("=")
+            if not identifier:
+                raise InvalidAttributeValueError(
+                    f"Invalid attribute: {entry['newrdn']} for DN: {dn}"
+                )
+
+            entry["cn"] = identifier
             return
 
         case "modify" if "memberUid" in entry:
             record.op = OperationType.ATTACH if "add" in entry else OperationType.DETACH
+            if not all(uid.isdigit() for uid in entry["memberUid"]):
+                raise InvalidAttributeValueError(
+                    f"Invalid attribute: {entry['memberUid']} for DN: {dn}"
+                )
             return
 
         case "modify":
