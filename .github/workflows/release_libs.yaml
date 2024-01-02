@@ -1,0 +1,23 @@
+name: Release Charm Library
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "lib/charms/glauth_utils/**"
+
+jobs:
+  release-libs:
+    name: Release charm library
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Release charm library
+        uses: canonical/charming-actions/release-libraries@main
+        with:
+          credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
