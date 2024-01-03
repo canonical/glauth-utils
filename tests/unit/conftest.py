@@ -2,14 +2,17 @@
 # See LICENSE file for licensing details.
 
 from dataclasses import asdict
+from unittest.mock import MagicMock
 
 import pytest
 from charm import GLAuthUtilsCharm
 from constants import AUXILIARY_INTEGRATION_NAME
 from ops.testing import Harness
+from pytest_mock import MockerFixture
 
 from lib.charms.glauth_utils.v0.glauth_auxiliary import AuxiliaryData
 
+LDIF_FILE_PATH = "foo"
 REMOTE_APP = "glauth-k8s"
 
 
@@ -46,3 +49,8 @@ def auxiliary_data_ready(harness: Harness, auxiliary_integration: int) -> Auxili
     )
 
     return auxiliary_data
+
+
+@pytest.fixture
+def ldif_file_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("pathlib.Path.is_file", return_value=True)

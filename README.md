@@ -48,8 +48,7 @@ PostgreSQL database).
 
 ```shell
 # 1. Transfer the LDIF file to the remote charm container in the leader unit
-$ juju scp -m <model> --container <charm-container> <path-to-ldif-file>
-<leader-unit>:<path-to-ldif-file-in-remote-container>
+$ juju scp -m <model> <path-to-ldif-file> <leader-unit>:<path-to-ldif-file-in-remote-container>
 
 # 2. Apply the LDIF file
 $ juju run <leader-unit> apply-ldif path=<path-to-ldif-file-in-remote-container>
@@ -64,6 +63,12 @@ The following diagram shows the database schema used by the `glauth-k8s`
 charmed operator's backend datastore.
 
 ![database_schema](img/database_schema_diagram.svg)
+
+> ⚠️ **NOTE**
+>
+> The backend relational database schema is determined by a GLAuth's database
+> plugin (e.g. the[ glauth-postgres](https://github.com/glauth/glauth-postgres)
+> plugin).
 
 ## Contributing
 

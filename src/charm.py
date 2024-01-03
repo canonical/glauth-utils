@@ -41,8 +41,6 @@ class GLAuthUtilsCharm(CharmBase):
             self.auxiliary_requirer.on.auxiliary_unavailable,
             self._on_auxiliary_unavailable,
         )
-        self.auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data()
-
         self.framework.observe(
             self.on.apply_ldif_action,
             self._on_apply_ldif_action,
@@ -78,16 +76,17 @@ class GLAuthUtilsCharm(CharmBase):
             event.fail(f"The LDIF file {ldif_file} does not exist.")
             return
 
-        if not self.auxiliary_data:
+        auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data()
+        if not auxiliary_data:
             event.fail("The auxiliary data is not ready yet.")
             return
 
         database = (
             f"postgresql+psycopg://"
-            f"{self.auxiliary_data.username}:"
-            f"{self.auxiliary_data.password}@"
-            f"{self.auxiliary_data.endpoint}/"
-            f"{self.auxiliary_data.database}"
+            f"{auxiliary_data.username}:"
+            f"{auxiliary_data.password}@"
+            f"{auxiliary_data.endpoint}/"
+            f"{auxiliary_data.database}"
         )
 
         event.log("Applying LDIF file...")

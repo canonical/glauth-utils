@@ -24,6 +24,10 @@ IDENTIFIER_REGEX: Final = re.compile(
     """,
     re.IGNORECASE | re.VERBOSE,
 )
+GROUP_HIERARCHY_REGEX: Final = re.compile(
+    r"ou=([^,]+)",
+    re.IGNORECASE,
+)
 PASSWORD_REGEX: Final = re.compile(
     r"""
     ^{(?P<prefix>.*?)}
@@ -96,7 +100,7 @@ def password_processor(dn: str, entry: dict, record: Record) -> None:
 @chain_order(order=4)
 def operation_processor(dn: str, entry: dict, record: Record) -> None:
     match entry.get("changetype"):
-        case "modrdn" | "moddn" if "newsuperior" in entry:
+        case "modrdn" | "moddn" if ("newsuperior" in entry and record.model is User):
             record.op = OperationType.MOVE
             if not (matched := IDENTIFIER_REGEX.search(entry["newsuperior"])):
                 raise InvalidAttributeValueError(
@@ -104,6 +108,19 @@ def operation_processor(dn: str, entry: dict, record: Record) -> None:
                 )
 
             entry["ou"] = matched.group("identifier")
+            return
+
+        case "modrdn" | "moddn" if ("newsuperior" in entry and record.model is Group):
+            record.op = OperationType.MOVE
+            if not (matched := IDENTIFIER_REGEX.search(entry["newsuperior"])):
+                raise InvalidAttributeValueError(
+                    f"Invalid attribute: {entry['newsuperior']} for DN: {dn}"
+                )
+
+            entry["ou"] = matched.group("identifier")
+
+            _, *parents = GROUP_HIERARCHY_REGEX.findall(dn)[:2]
+            entry["parentGroup"] = parents[0] if parents else ""
             return
 
         case "modrdn" | "moddn" if "newrdn" in entry:

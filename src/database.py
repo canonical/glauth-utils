@@ -34,6 +34,7 @@ class Base(DeclarativeBase):
     pass
 
 
+# https://github.com/glauth/glauth-postgres/blob/main/postgres.go
 class User(Base):
     __tablename__ = "users"
 

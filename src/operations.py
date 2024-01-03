@@ -141,19 +141,25 @@ class GroupOperation(Operation):
     def move(self, session: Session, record: Record) -> None:
         group = self.select(session, Group, Group.name == record.identifier).first()
         parent_group = self.select(
+            session, Group, Group.name == record.attributes.get("parentGroup")
+        ).first()
+        new_parent_group = self.select(
             session, Group, Group.name == record.attributes.get("ou")
         ).first()
 
         if association := self.select(
-            session, IncludeGroup, IncludeGroup.child_group == group
+            session,
+            IncludeGroup,
+            IncludeGroup.parent_group == parent_group,
+            IncludeGroup.child_group == group,
         ).first():
-            association.parent_group = parent_group
+            association.parent_group = new_parent_group
             return
 
         include_group_record = Record(
             identifier="ou",
             model=IncludeGroup,
-            attributes={"parentGroup": parent_group, "childGroup": group},
+            attributes={"parentGroup": new_parent_group, "childGroup": group},
         )
         self.create(session, include_group_record)
 

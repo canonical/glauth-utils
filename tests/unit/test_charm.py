@@ -4,6 +4,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from conftest import LDIF_FILE_PATH
 from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import ActionFailed, Harness
@@ -50,95 +51,88 @@ class TestAuxiliaryUnavailableEvent:
 class TestApplyLdifAction:
     def test_charm_not_ready(self, harness: Harness) -> None:
         with pytest.raises(ActionFailed) as exc:
-            harness.run_action("apply-ldif", {"path": "foo"})
+            harness.run_action("apply-ldif", {"path": LDIF_FILE_PATH})
 
         assert f"The {harness.charm.app.name} is not ready yet." == exc.value.message
 
     def test_ldif_not_exists(self, harness: Harness) -> None:
         harness.model.unit.status = ActiveStatus()
         with pytest.raises(ActionFailed) as exc:
-            harness.run_action("apply-ldif", {"path": "foo"})
+            harness.run_action("apply-ldif", {"path": LDIF_FILE_PATH})
 
-        assert "The LDIF file foo does not exist." == exc.value.message
+        assert f"The LDIF file {LDIF_FILE_PATH} does not exist." == exc.value.message
 
-    @patch("pathlib.Path.is_file", return_value=True)
-    def test_auxiliary_data_not_ready(self, mocked_ldif: MagicMock, harness: Harness) -> None:
+    def test_auxiliary_data_not_ready(self, harness: Harness, ldif_file_mock: MagicMock) -> None:
         harness.model.unit.status = ActiveStatus()
         with pytest.raises(ActionFailed) as exc:
-            harness.run_action("apply-ldif", {"path": "foo"})
+            harness.run_action("apply-ldif", {"path": LDIF_FILE_PATH})
 
         assert "The auxiliary data is not ready yet." == exc.value.message
 
-    @patch("pathlib.Path.is_file", return_value=True)
     @patch("charm.apply_ldif", side_effect=InvalidAttributeValueError)
     def test_with_invalid_ldif_attribute(
         self,
         mocked_apply_ldif: MagicMock,
-        mocked_is_file: MagicMock,
         harness: Harness,
         auxiliary_integration: int,
         auxiliary_data_ready: AuxiliaryData,
+        ldif_file_mock: MagicMock,
     ) -> None:
         harness.model.unit.status = ActiveStatus()
-        harness.charm.auxiliary_data = auxiliary_data_ready
+
         with pytest.raises(ActionFailed) as exc:
-            harness.run_action("apply-ldif", {"path": "foo"})
+            harness.run_action("apply-ldif", {"path": LDIF_FILE_PATH})
 
         assert any(
             log.find("Failed to parse the LDIF file.") > -1 for log in exc.value.output.logs
         )
 
-    @patch("pathlib.Path.is_file", return_value=True)
     @patch("charm.apply_ldif", side_effect=InvalidDistinguishedNameError)
     def test_with_invalid_ldif_distinguished_name(
         self,
         mocked_apply_ldif: MagicMock,
-        mocked_is_file: MagicMock,
         harness: Harness,
         auxiliary_integration: int,
         auxiliary_data_ready: AuxiliaryData,
+        ldif_file_mock: MagicMock,
     ) -> None:
         harness.model.unit.status = ActiveStatus()
-        harness.charm.auxiliary_data = auxiliary_data_ready
+
         with pytest.raises(ActionFailed) as exc:
-            harness.run_action("apply-ldif", {"path": "foo"})
+            harness.run_action("apply-ldif", {"path": LDIF_FILE_PATH})
 
         assert any(
             log.find("Failed to parse the LDIF file.") > -1 for log in exc.value.output.logs
         )
 
-    @patch("pathlib.Path.is_file", return_value=True)
     @patch("charm.apply_ldif", side_effect=Exception)
     def test_with_unknown_error(
         self,
         mocked_apply_ldif: MagicMock,
-        mocked_is_file: MagicMock,
         harness: Harness,
         auxiliary_integration: int,
         auxiliary_data_ready: AuxiliaryData,
+        ldif_file_mock: MagicMock,
     ) -> None:
         harness.model.unit.status = ActiveStatus()
-        harness.charm.auxiliary_data = auxiliary_data_ready
 
         with pytest.raises(ActionFailed) as exc:
-            harness.run_action("apply-ldif", {"path": "foo"})
+            harness.run_action("apply-ldif", {"path": LDIF_FILE_PATH})
 
         assert any(
             log.find("Failed to apply the LDIF file.") > -1 for log in exc.value.output.logs
         )
 
-    @patch("pathlib.Path.is_file", return_value=True)
     @patch("charm.apply_ldif")
     def test_run_action(
         self,
         mocked_apply_ldif: MagicMock,
-        mocked_is_file: MagicMock,
         harness: Harness,
         auxiliary_integration: int,
         auxiliary_data_ready: AuxiliaryData,
+        ldif_file_mock: MagicMock,
     ) -> None:
         harness.model.unit.status = ActiveStatus()
-        harness.charm.auxiliary_data = auxiliary_data_ready
 
-        output = harness.run_action("apply-ldif", {"path": "foo"})
+        output = harness.run_action("apply-ldif", {"path": LDIF_FILE_PATH})
         assert any(log.find("Successfully applied the LDIF file.") > -1 for log in output.logs)
