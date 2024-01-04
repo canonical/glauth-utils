@@ -37,6 +37,8 @@ def op_label(op: OperationType) -> Callable[[Method], Method]:
     return decorator
 
 
+# How SQLAlchemy session persists data to the database:
+# https://docs.sqlalchemy.org/en/20/glossary.html#term-unit-of-work
 class Operation(ABC):
     _op_registry: dict[OperationType, Callable] = {}
 
