@@ -1,0 +1,58 @@
+name: Publish Charm
+
+on:
+  workflow_call:
+    inputs:
+      source_branch:
+        description: source branch to publish
+        default: ''
+        required: false
+        type: string
+    secrets:
+      CHARMCRAFT_CREDENTIALS:
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      destination_channel:
+        description: CharmHub channel to publish to
+        required: false
+        default: 'latest/edge'
+        type: string
+      source_branch:
+        description: source branch to publish
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  publish-charm:
+    name: Publish Charm
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.source_branch }}
+
+      - name: Select CharmHub channel
+        uses: canonical/charming-actions/channel@2.4.0
+        id: select-channel
+        if: ${{ inputs.destination_channel == '' }}
+
+      - name: Parse and combine inputs
+        id: parse-inputs
+        run: |
+          # destination_channel
+          destination_channel="${{ inputs.destination_channel || steps.select-channel.outputs.name }}"
+          echo "setting output of destination_channel=$destination_channel"
+          echo "::set-output name=destination_channel::$destination_channel"
+
+      - name: Upload charm to CharmHub
+        uses: canonical/charming-actions/upload-charm@2.4.0
+        with:
+          credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          channel: ${{ steps.parse-inputs.outputs.destination_channel }}
