@@ -1,3 +1,5 @@
 ops >= 2.9.0
-dacite~=1.8.0
+dacite ~= 1.8.0
 psycopg[binary]
+SQLAlchemy
+python-ldap

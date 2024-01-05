@@ -7,15 +7,21 @@
 """A Juju Kubernetes charmed operator for GLAuth Utility Features."""
 
 import logging
+from pathlib import Path
 
-from charms.glauth_utils.v0.glauth_auxiliary import AuxiliaryReadyEvent, AuxiliaryRequirer
-from ops.charm import CharmBase, StartEvent
+from action import apply_ldif
+from charms.glauth_utils.v0.glauth_auxiliary import (
+    AuxiliaryReadyEvent,
+    AuxiliaryRequirer,
+    AuxiliaryUnavailableEvent,
+)
+from constants import AUXILIARY_INTEGRATION_NAME
+from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
+from ops.charm import ActionEvent, CharmBase, StartEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
 
 logger = logging.getLogger(__name__)
-
-AUXILIARY_INTEGRATION_NAME = "glauth-auxiliary"
 
 
 class GLAuthUtilsCharm(CharmBase):
@@ -30,6 +36,14 @@ class GLAuthUtilsCharm(CharmBase):
         self.framework.observe(
             self.auxiliary_requirer.on.auxiliary_ready,
             self._on_auxiliary_ready,
+        )
+        self.framework.observe(
+            self.auxiliary_requirer.on.auxiliary_unavailable,
+            self._on_auxiliary_unavailable,
+        )
+        self.framework.observe(
+            self.on.apply_ldif_action,
+            self._on_apply_ldif_action,
         )
 
     def _on_start(self, event: StartEvent) -> None:
@@ -49,10 +63,43 @@ class GLAuthUtilsCharm(CharmBase):
     def _on_auxiliary_ready(self, event: AuxiliaryReadyEvent) -> None:
         self.unit.status = ActiveStatus()
 
-        auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data(  # noqa
-            relation_id=event.relation.id
+    def _on_auxiliary_unavailable(self, event: AuxiliaryUnavailableEvent) -> None:
+        self.unit.status = BlockedStatus("Waiting for the required auxiliary integration.")
+
+    def _on_apply_ldif_action(self, event: ActionEvent) -> None:
+        if not isinstance(self.unit.status, ActiveStatus):
+            event.fail(f"The {self.app.name} is not ready yet.")
+            return
+
+        ldif_file = event.params.get("path")
+        if not Path(ldif_file).is_file():
+            event.fail(f"The LDIF file {ldif_file} does not exist.")
+            return
+
+        auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data()
+        if not auxiliary_data:
+            event.fail("The auxiliary data is not ready yet.")
+            return
+
+        database = (
+            f"postgresql+psycopg://"
+            f"{auxiliary_data.username}:"
+            f"{auxiliary_data.password}@"
+            f"{auxiliary_data.endpoint}/"
+            f"{auxiliary_data.database}"
         )
-        # TODO: do something with the auxiliary data
+
+        event.log("Applying LDIF file...")
+        try:
+            apply_ldif(ldif_file, database)
+        except (InvalidAttributeValueError, InvalidDistinguishedNameError) as e:
+            event.log("Failed to parse the LDIF file. See more details using juju show-operation.")
+            event.fail(f"The failed action is caused by: {e}")
+        except Exception as e:
+            event.log("Failed to apply the LDIF file. See more details using juju show-operation.")
+            event.fail(f"The failed action is caused by: {e}")
+        else:
+            event.log("Successfully applied the LDIF file.")
 
 
 if __name__ == "__main__":

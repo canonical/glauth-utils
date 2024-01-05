@@ -12,6 +12,8 @@ The requirer charm is expected to:
 
 - Listen to the custom juju event `AuxiliaryReadyEvent` to consume the
 auxiliary data from the integration
+- Listen to the custom juju event `AuxiliaryUnavailableEvent` to handle the
+situation when the auxiliary integration is broken
 
 ```python
 
@@ -31,12 +33,20 @@ class RequirerCharm(CharmBase):
             self.auxiliary_requirer.on.auxiliary_ready,
             self._on_auxiliary_ready,
         )
+        self.framework.observe(
+            self.auxiliary_requirer.on.auxiliary_unavailable,
+            self._on_auxiliary_unavailable,
+        )
 
     def _on_auxiliary_ready(self, event: AuxiliaryReadyEvent) -> None:
         # Consume the auxiliary data
         auxiliary_data = self.auxiliary_requirer.consume_auxiliary_relation_data(
             event.relation.id,
         )
+
+    def _on_auxiliary_unavailable(self, event: AuxiliaryUnavailableEvent) -> None:
+    # Handle the situation where the auxiliary integration is broken
+    ...
 ```
 
 As shown above, the library offers custom juju event to handle the specific
@@ -44,6 +54,7 @@ situation, which are listed below:
 
 - auxiliary_ready: event emitted when the auxiliary data is ready for
 requirer charm to use.
+- auxiliary_unavailable: event emitted when the auxiliary integration is broken.
 
 Additionally, the requirer charmed operator needs to declare the `auxiliary`
 interface in the `metadata.yaml`:
@@ -107,6 +118,7 @@ from typing import Any, Callable, Optional, Union
 from dacite import from_dict
 from ops.charm import (
     CharmBase,
+    RelationBrokenEvent,
     RelationChangedEvent,
     RelationCreatedEvent,
     RelationEvent,
@@ -134,7 +146,7 @@ def leader_unit(func: Callable) -> Callable:
         obj: Union["AuxiliaryProvider", "AuxiliaryRequirer"],
         *args: Any,
         **kwargs: Any,
-    ) -> Optional[Any]:
+    ) -> Any:
         if not obj.unit.is_leader():
             return None
 
@@ -159,12 +171,17 @@ class AuxiliaryReadyEvent(RelationEvent):
     """An event emitted when the auxiliary data is ready."""
 
 
+class AuxiliaryUnavailableEvent(RelationEvent):
+    """An event emitted when the auxiliary integration is unavailable."""
+
+
 class AuxiliaryProviderEvents(ObjectEvents):
     auxiliary_requested = EventSource(AuxiliaryRequestedEvent)
 
 
 class AuxiliaryRequirerEvents(ObjectEvents):
     auxiliary_ready = EventSource(AuxiliaryReadyEvent)
+    auxiliary_unavailable = EventSource(AuxiliaryUnavailableEvent)
 
 
 class AuxiliaryProvider(Object):
@@ -220,6 +237,10 @@ class AuxiliaryRequirer(Object):
             self.charm.on[self._relation_name].relation_changed,
             self._on_relation_changed,
         )
+        self.framework.observe(
+            self.charm.on[self._relation_name].relation_broken,
+            self._on_auxiliary_relation_broken,
+        )
 
     @leader_unit
     def _on_relation_changed(self, event: RelationChangedEvent) -> None:
@@ -228,6 +249,10 @@ class AuxiliaryRequirer(Object):
             return
 
         self.on.auxiliary_ready.emit(event.relation)
+
+    def _on_auxiliary_relation_broken(self, event: RelationBrokenEvent) -> None:
+        """Handle the event emitted when the auxiliary integration is broken."""
+        self.on.auxiliary_unavailable.emit(event.relation)
 
     def consume_auxiliary_relation_data(
         self,

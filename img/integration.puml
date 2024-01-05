@@ -1,0 +1,23 @@
+@startuml
+left to right direction
+skinparam ArrowHeadColor red
+skinparam NodeSep 70
+
+<style>
+package {
+  BackGroundColor #22ccaa
+  LineThickness 1
+  LineColor black
+}
+</style>
+
+package "integration with glauth-k8s charmed operator" {
+  node glauth as "glauth-k8s operator"
+  node postgresql as "backend datastore operator"
+  node utility as "glauth-utilities operator"
+
+  [glauth] 0--0 [postgresql] : "" <database>_client""
+  [glauth] 0-left-0 [utility] : ""                      auxiliary""
+}
+
+@enduml
