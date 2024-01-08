@@ -111,11 +111,9 @@ the provider charm
 
 """
 
-from dataclasses import asdict, dataclass
 from functools import wraps
 from typing import Any, Callable, Optional, Union
 
-from dacite import from_dict
 from ops.charm import (
     CharmBase,
     RelationBrokenEvent,
@@ -124,6 +122,7 @@ from ops.charm import (
     RelationEvent,
 )
 from ops.framework import EventSource, Object, ObjectEvents
+from pydantic import BaseModel, ConfigDict
 
 # The unique Charmhub library identifier, never change it
 LIBID = "8c3a907cf23345ea8be7fccfe15b2cf7"
@@ -135,7 +134,7 @@ LIBAPI = 0
 # to 0 if you are raising the major API version
 LIBPATCH = 1
 
-PYDEPS = ["dacite~=1.8.0"]
+PYDEPS = ["pydantic~=2.5.3"]
 
 DEFAULT_RELATION_NAME = "glauth-auxiliary"
 
@@ -155,8 +154,9 @@ def leader_unit(func: Callable) -> Callable:
     return wrapper
 
 
-@dataclass(frozen=True)
-class AuxiliaryData:
+class AuxiliaryData(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     database: str
     endpoint: str
     username: str
@@ -215,7 +215,7 @@ class AuxiliaryProvider(Object):
         if not (relation := self.charm.model.get_relation(self._relation_name, relation_id)):
             return
 
-        relation.data[self.app].update(asdict(data))
+        relation.data[self.app].update(data.model_dump())
 
 
 class AuxiliaryRequirer(Object):
@@ -266,11 +266,4 @@ class AuxiliaryRequirer(Object):
         if not (auxiliary_data := relation.data.get(relation.app)):
             return None
 
-        return (
-            from_dict(
-                data_class=AuxiliaryData,
-                data=auxiliary_data,
-            )
-            if auxiliary_data
-            else None
-        )
+        return AuxiliaryData(**auxiliary_data) if auxiliary_data else None
