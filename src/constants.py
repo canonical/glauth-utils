@@ -1,4 +1,3 @@
-from collections.abc import KeysView
 from enum import Enum
 from typing import Final
 
@@ -8,9 +7,9 @@ USER_IDENTIFIER_ATTRIBUTE: Final[str] = "cn"
 
 GROUP_IDENTIFIER_ATTRIBUTE: Final[str] = "ou"
 
-LDIF_PARSER_IGNORED_ATTRIBUTES: Final[tuple[str, ...]] = ("objectClass",)
+LDIF_PARSER_IGNORED_ATTRIBUTES: Final[set[str]] = {"objectClass"}
 
-LDIF_SANITIZE_ATTRIBUTES: Final[tuple[str, ...]] = (
+LDIF_SANITIZE_ATTRIBUTES: Final[set[str]] = {
     "changetype",
     "add",
     "replace",
@@ -19,7 +18,7 @@ LDIF_SANITIZE_ATTRIBUTES: Final[tuple[str, ...]] = (
     "newrdn",
     "newsuperior",
     "objectClass",
-)
+}
 
 LDIF_TO_USER_MODEL_MAPPINGS: Final[dict[str, str]] = {
     "cn": "name",
@@ -48,11 +47,15 @@ LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS: Final[dict[str, str]] = {
     "childGroup": "child_group",
 }
 
-SUPPORTED_LDIF_ATTRIBUTES: Final[KeysView] = (
+CUSTOM_ADDITIONAL_ATTRIBUTES: Final[set[str]] = {
+    "newParentGroup",
+}
+
+SUPPORTED_LDIF_ATTRIBUTES: Final[set[str]] = (
     LDIF_TO_USER_MODEL_MAPPINGS
     | LDIF_TO_GROUP_MODEL_MAPPINGS
     | LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS
-).keys()
+).keys() | CUSTOM_ADDITIONAL_ATTRIBUTES
 
 PASSWORD_ALGORITHM_REGISTRY: Final[dict[str, str]] = {
     "sha256": "passwordSha256",

@@ -117,7 +117,7 @@ def operation_processor(dn: str, entry: dict, record: Record) -> None:
                     f"Invalid attribute: {entry['newsuperior']} for DN: {dn}"
                 )
 
-            entry["ou"] = matched.group("identifier")
+            entry["newParentGroup"] = matched.group("identifier")
 
             _, *parents = GROUP_HIERARCHY_REGEX.findall(dn)[:2]
             entry["parentGroup"] = parents[0] if parents else ""
@@ -154,6 +154,12 @@ def operation_processor(dn: str, entry: dict, record: Record) -> None:
 
         case _:
             record.op = OperationType.CREATE
+
+            if record.model is not Group:
+                return
+
+            _, *parents = GROUP_HIERARCHY_REGEX.findall(dn)[:2]
+            entry["parentGroup"] = parents[0] if parents else ""
 
 
 @chain_order(order=5)
