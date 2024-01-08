@@ -1,9 +1,12 @@
 # GLAuth Utility Kubernetes Charmed Operator
 
+[![CharmHub Badge](https://charmhub.io/glauth-utils/badge.svg)](https://charmhub.io/glauth-utils)
 ![Python](https://img.shields.io/python/required-version-toml?label=Python&tomlFilePath=https://raw.githubusercontent.com/canonical/glauth-utils/main/pyproject.toml)
 [![Juju](https://img.shields.io/badge/Juju%20-3.0+-%23E95420)](https://github.com/juju/juju)
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04-E95420?label=Ubuntu&logo=ubuntu&logoColor=white)
 [![License](https://img.shields.io/github/license/canonical/glauth-utils?label=License)](https://github.com/canonical/glauth-k8s-operator/blob/main/LICENSE)
+
+[![Continuous Integration Status](https://github.com/canonical/glauth-utils/actions/workflows/on_push.yaml/badge.svg?branch=main)](https://github.com/canonical/glauth-utils/actions?query=branch%3Amain)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 This repository holds a utility Kubernetes charmed operator
