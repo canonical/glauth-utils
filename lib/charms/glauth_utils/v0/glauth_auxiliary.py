@@ -210,12 +210,18 @@ class AuxiliaryProvider(Object):
         self.on.auxiliary_requested.emit(event.relation)
 
     @leader_unit
-    def update_relation_app_data(self, /, relation_id: int, data: AuxiliaryData) -> None:
+    def update_relation_app_data(
+        self, /, data: AuxiliaryData, relation_id: Optional[int] = None
+    ) -> None:
         """An API for the provider charm to provide the auxiliary data."""
-        if not (relation := self.charm.model.get_relation(self._relation_name, relation_id)):
+        if not (relations := self.charm.model.relations.get(self._relation_name)):
             return
 
-        relation.data[self.app].update(data.model_dump())
+        if relation_id is not None:
+            relations = [relation for relation in relations if relation.id == relation_id]
+
+        for relation in relations:
+            relation.data[self.app].update(data.model_dump())
 
 
 class AuxiliaryRequirer(Object):
