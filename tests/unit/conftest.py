@@ -1,7 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from dataclasses import asdict
 from unittest.mock import MagicMock
 
 import pytest
@@ -45,7 +44,7 @@ def auxiliary_data_ready(harness: Harness, auxiliary_integration: int) -> Auxili
     harness.update_relation_data(
         auxiliary_integration,
         REMOTE_APP,
-        asdict(auxiliary_data),
+        auxiliary_data.model_dump(),
     )
 
     return auxiliary_data

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import replace
 from typing import Callable, Final, Optional, Type, TypeVar
 
 from constants import (
@@ -59,7 +60,9 @@ class Operation(ABC):
     def create(self, session: Session, record: Record) -> None:
         attribute_mapping = LDIF_MODEL_MAPPINGS[record.model]
 
-        attributes = {attribute_mapping[k]: v for k, v in record.attributes.items()}
+        attributes = {
+            attribute_mapping[k]: v for k, v in record.attributes.items() if k in attribute_mapping
+        }
         obj = record.model(**attributes)
         session.add(obj)
 
@@ -73,7 +76,8 @@ class Operation(ABC):
 
         attribute_mapping = LDIF_MODEL_MAPPINGS[record.model]
         for attr, value in record.attributes.items():
-            setattr(obj, attribute_mapping[attr], value)
+            if mapped_attr := attribute_mapping.get(attr):
+                setattr(obj, mapped_attr, value)
 
     def delete(self, session: Session, record: Record) -> None:
         if obj := self.select(
@@ -90,7 +94,11 @@ class Operation(ABC):
 class UserOperation(Operation):
     @op_label(OperationType.CREATE)
     def create(self, session: Session, record: Record) -> None:
-        attributes = {LDIF_TO_USER_MODEL_MAPPINGS[k]: v for k, v in record.attributes.items()}
+        attributes = {
+            LDIF_TO_USER_MODEL_MAPPINGS[k]: v
+            for k, v in record.attributes.items()
+            if k in LDIF_TO_USER_MODEL_MAPPINGS
+        }
         obj = record.model(**attributes)
 
         if record.custom_attributes:
@@ -104,7 +112,8 @@ class UserOperation(Operation):
             return
 
         for attr, value in record.attributes.items():
-            setattr(obj, LDIF_TO_USER_MODEL_MAPPINGS[attr], value)
+            if mapped_attr := LDIF_TO_USER_MODEL_MAPPINGS.get(attr):
+                setattr(obj, mapped_attr, value)
 
         if record.custom_attributes:
             obj.custom_attributes = {
@@ -130,6 +139,14 @@ class GroupOperation(Operation):
     @op_label(OperationType.CREATE)
     def create(self, session: Session, record: Record) -> None:
         super().create(session, record)
+        match record.attributes:
+            case {"parentGroup": parent_group} if parent_group:
+                association_record = replace(record)
+                association_record.op = OperationType.MOVE
+                association_record.attributes["newParentGroup"] = parent_group
+                self.move(session, association_record)
+            case _:
+                return
 
     @op_label(OperationType.UPDATE)
     def update(self, session: Session, record: Record) -> None:
@@ -146,7 +163,7 @@ class GroupOperation(Operation):
             session, Group, Group.name == record.attributes.get("parentGroup")
         ).first()
         new_parent_group = self.select(
-            session, Group, Group.name == record.attributes.get("ou")
+            session, Group, Group.name == record.attributes.get("newParentGroup")
         ).first()
 
         if association := self.select(
@@ -163,7 +180,7 @@ class GroupOperation(Operation):
             model=IncludeGroup,
             attributes={"parentGroup": new_parent_group, "childGroup": group},
         )
-        self.create(session, include_group_record)
+        super().create(session, include_group_record)
 
     @op_label(OperationType.ATTACH)
     def attach(self, session: Session, record: Record) -> None:
