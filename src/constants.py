@@ -1,4 +1,6 @@
+import re
 from enum import Enum
+from re import Pattern
 from typing import Final
 
 AUXILIARY_INTEGRATION_NAME = "glauth-auxiliary"
@@ -70,3 +72,44 @@ class OperationType(Enum):
     MOVE = "move"
     ATTACH = "attach"
     DETACH = "detach"
+
+
+# Match "cn" or "ou" in a DN
+# e.g. "cn=hackers,ou=superheros,dc=glauth,dc=com"
+# The "id_attribute" group is "cn" and the "identifier" group is "hackers"
+IDENTIFIER_REGEX: Final[Pattern] = re.compile(
+    r"""
+    ^(?P<id_attribute>cn|ou)
+    =
+    (?P<identifier>.*?)
+    ,
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+# Match "newrdn" attribute in an LDIF record
+# e.g. "newrdn: cn=hackers"
+# The "newrdn" group is "hackers"
+NEWRDN_REGEX: Final[Pattern] = re.compile(r"^cn=(?P<newrdn>[^,]+)", re.IGNORECASE)
+
+
+# Match all "ou" in a DN
+# e.g. "ou=superheros,ou=caped,ou=human,dc=glauth,dc=com"
+# The "ou" group includes "superheros", "caped", and "human"
+GROUP_HIERARCHY_REGEX: Final[Pattern] = re.compile(
+    r"ou=([^,]+)",
+    re.IGNORECASE,
+)
+
+
+# Match "userPassword" attribute in an LDIF record
+# e.g. "userPassword: {SHA256}abc
+# The "prefix" group is "SHA256" and the "password" group is "abc"
+PASSWORD_REGEX: Final[Pattern] = re.compile(
+    r"""
+    ^{(?P<prefix>.*?)}
+    (?P<password>.*$)
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)

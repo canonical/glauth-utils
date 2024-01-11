@@ -1,12 +1,15 @@
 import operator
-import re
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Any, Callable, Final, Iterable, List, Optional, TextIO, Type
+from typing import Any, Callable, Iterable, List, Optional, TextIO, Type
 
 from constants import (
+    GROUP_HIERARCHY_REGEX,
+    IDENTIFIER_REGEX,
     LDIF_SANITIZE_ATTRIBUTES,
+    NEWRDN_REGEX,
     PASSWORD_ALGORITHM_REGISTRY,
+    PASSWORD_REGEX,
     SUPPORTED_LDIF_ATTRIBUTES,
     USER_IDENTIFIER_ATTRIBUTE,
     OperationType,
@@ -14,28 +17,6 @@ from constants import (
 from database import Base, Group, User
 from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ldif import LDIFRecordList
-
-IDENTIFIER_REGEX: Final = re.compile(
-    r"""
-    ^(?P<id_attribute>cn|ou)
-    =
-    (?P<identifier>.*?)
-    ,
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
-NEWRDN_REGEX: Final = re.compile(r"^cn=(?P<newrdn>[^,]+)", re.IGNORECASE)
-GROUP_HIERARCHY_REGEX: Final = re.compile(
-    r"ou=([^,]+)",
-    re.IGNORECASE,
-)
-PASSWORD_REGEX: Final = re.compile(
-    r"""
-    ^{(?P<prefix>.*?)}
-    (?P<password>.*$)
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
 
 Processor = Callable[[str, dict, "Record"], None]
 
