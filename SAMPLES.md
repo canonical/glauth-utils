@@ -8,7 +8,7 @@ information about the LDIF.
 ## Add a Group
 
 ```ldif
-dn: ou=superheros,dc=glauth,dc=com
+dn: ou=superheros,ou=supergroup,dc=glauth,dc=com
 objectClass: posixGroup
 ou: superheros
 gidNumber: 5501
@@ -18,13 +18,25 @@ gidNumber: 5501
 > - `ou` and `gidNumber` **MUST** be provided.
 > - `ou` **MUST** be unique.
 
+## Add a Group with an association with another Group
+
+```ldif
+dn: ou=caped,ou=superheros,dc=glauth,dc=com
+objectClass: posixGroup
+ou: caped
+gidNumber: 5502
+```
+
+> ⚠️ **NOTE**
+> - This assumes that the Group `superheros` already exists.
+
 ## Modify a Group
 
 ```ldif
 dn: ou=superheros,dc=glauth,dc=com
 changetype: modify
 replace: gidNumber
-gidNumber: 5502
+gidNumber: 5500
 ```
 
 ## Delete a Group

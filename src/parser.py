@@ -1,12 +1,15 @@
 import operator
-import re
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Any, Callable, Final, Iterable, List, Optional, TextIO, Type
+from typing import Any, Callable, Iterable, List, Optional, TextIO, Type
 
 from constants import (
+    GROUP_HIERARCHY_REGEX,
+    IDENTIFIER_REGEX,
     LDIF_SANITIZE_ATTRIBUTES,
+    NEWRDN_REGEX,
     PASSWORD_ALGORITHM_REGISTRY,
+    PASSWORD_REGEX,
     SUPPORTED_LDIF_ATTRIBUTES,
     USER_IDENTIFIER_ATTRIBUTE,
     OperationType,
@@ -14,27 +17,6 @@ from constants import (
 from database import Base, Group, User
 from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ldif import LDIFRecordList
-
-IDENTIFIER_REGEX: Final = re.compile(
-    r"""
-    ^(?P<id_attribute>cn|ou)
-    =
-    (?P<identifier>.*?)
-    ,
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
-GROUP_HIERARCHY_REGEX: Final = re.compile(
-    r"ou=([^,]+)",
-    re.IGNORECASE,
-)
-PASSWORD_REGEX: Final = re.compile(
-    r"""
-    ^{(?P<prefix>.*?)}
-    (?P<password>.*$)
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
 
 Processor = Callable[[str, dict, "Record"], None]
 
@@ -48,6 +30,16 @@ class Record:
     op: OperationType = OperationType.CREATE
     attributes: dict[str, Any] = field(default_factory=dict)
     custom_attributes: dict[str, Any] = field(default_factory=dict)
+
+
+def _extract_identifier(haystack: str) -> str:
+    matched = IDENTIFIER_REGEX.search(haystack)
+    return matched.group("identifier") if matched else ""
+
+
+def _extract_group(haystack: str) -> str:
+    _, *parents = GROUP_HIERARCHY_REGEX.findall(haystack)[:2]
+    return parents[0] if parents else ""
 
 
 def chain_order(order: int) -> Callable[[Processor], Processor]:
@@ -98,48 +90,43 @@ def password_processor(dn: str, entry: dict, record: Record) -> None:
 
 
 @chain_order(order=4)
+def entry_validation_processor(dn: str, entry: dict, record: Record):
+    if new_superior := entry.get("newsuperior"):
+        if not IDENTIFIER_REGEX.search(new_superior):
+            raise InvalidAttributeValueError(f"Invalid newsuperior for DN: {dn}")
+
+    if newrdn := entry.get("newrdn"):
+        if not (matched := NEWRDN_REGEX.search(newrdn)):
+            raise InvalidAttributeValueError(f"Invalid newrdn for DN: {dn}")
+
+        entry["newrdn"] = matched.group("newrdn")
+
+    if member_uid := entry.get("memberUid"):
+        if not all(uid.isdigit() for uid in member_uid):
+            raise InvalidAttributeValueError(f"Invalid memberUid for DN: {dn}")
+
+
+@chain_order(order=5)
 def operation_processor(dn: str, entry: dict, record: Record) -> None:
     match entry.get("changetype"):
         case "modrdn" | "moddn" if ("newsuperior" in entry and record.model is User):
             record.op = OperationType.MOVE
-            if not (matched := IDENTIFIER_REGEX.search(entry["newsuperior"])):
-                raise InvalidAttributeValueError(
-                    f"Invalid attribute: {entry['newsuperior']} for DN: {dn}"
-                )
-
-            entry["ou"] = matched.group("identifier")
+            entry["ou"] = _extract_identifier(entry["newsuperior"])
             return
 
         case "modrdn" | "moddn" if ("newsuperior" in entry and record.model is Group):
             record.op = OperationType.MOVE
-            if not (matched := IDENTIFIER_REGEX.search(entry["newsuperior"])):
-                raise InvalidAttributeValueError(
-                    f"Invalid attribute: {entry['newsuperior']} for DN: {dn}"
-                )
-
-            entry["ou"] = matched.group("identifier")
-
-            _, *parents = GROUP_HIERARCHY_REGEX.findall(dn)[:2]
-            entry["parentGroup"] = parents[0] if parents else ""
+            entry["newParentGroup"] = _extract_identifier(entry["newsuperior"])
+            entry["parentGroup"] = _extract_group(dn)
             return
 
         case "modrdn" | "moddn" if "newrdn" in entry:
             record.op = OperationType.UPDATE
-            *_, identifier = entry["newrdn"].partition("=")
-            if not identifier:
-                raise InvalidAttributeValueError(
-                    f"Invalid attribute: {entry['newrdn']} for DN: {dn}"
-                )
-
-            entry["cn"] = identifier
+            entry["cn"] = entry["newrdn"]
             return
 
         case "modify" if "memberUid" in entry:
             record.op = OperationType.ATTACH if "add" in entry else OperationType.DETACH
-            if not all(uid.isdigit() for uid in entry["memberUid"]):
-                raise InvalidAttributeValueError(
-                    f"Invalid attribute: {entry['memberUid']} for DN: {dn}"
-                )
             return
 
         case "modify":
@@ -154,9 +141,12 @@ def operation_processor(dn: str, entry: dict, record: Record) -> None:
 
         case _:
             record.op = OperationType.CREATE
+            if record.model is not Group:
+                return
+            entry["parentGroup"] = _extract_group(dn)
 
 
-@chain_order(order=5)
+@chain_order(order=6)
 def attribute_processor(dn: str, entry: dict, record: Record) -> None:
     for sanitized_attribute in LDIF_SANITIZE_ATTRIBUTES:
         entry.pop(sanitized_attribute, None)
@@ -166,7 +156,7 @@ def attribute_processor(dn: str, entry: dict, record: Record) -> None:
     record.attributes = supported_attributes
 
 
-@chain_order(order=6)
+@chain_order(order=7)
 def custom_attribute_processor(dn: str, entry: dict, record: Record) -> None:
     if record.model is not User:
         return
