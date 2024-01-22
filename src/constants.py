@@ -1,3 +1,6 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 import re
 from enum import Enum
 from re import Pattern
@@ -81,7 +84,7 @@ IDENTIFIER_REGEX: Final[Pattern] = re.compile(
     r"""
     ^(?P<id_attribute>cn|ou)
     =
-    (?P<identifier>.*?)
+    (?P<identifier>.+?)
     ,
     """,
     re.IGNORECASE | re.VERBOSE,
@@ -108,8 +111,8 @@ GROUP_HIERARCHY_REGEX: Final[Pattern] = re.compile(
 # The "prefix" group is "SHA256" and the "password" group is "abc"
 PASSWORD_REGEX: Final[Pattern] = re.compile(
     r"""
-    ^{(?P<prefix>.*?)}
-    (?P<password>.*$)
+    ^{(?P<prefix>.+?)}
+    (?P<password>.+$)
     """,
     re.IGNORECASE | re.VERBOSE,
 )

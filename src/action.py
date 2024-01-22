@@ -1,3 +1,6 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 from pathlib import Path
 
 from constants import LDIF_PARSER_IGNORED_ATTRIBUTES

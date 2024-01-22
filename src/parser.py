@@ -1,3 +1,6 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 import operator
 from dataclasses import dataclass, field
 from functools import wraps
@@ -42,6 +45,11 @@ def _extract_group(haystack: str) -> str:
     return parents[0] if parents else ""
 
 
+def _extract_newrdn(haystack: str) -> str:
+    matched = NEWRDN_REGEX.search(haystack)
+    return matched.group("newrdn") if matched else ""
+
+
 def chain_order(order: int) -> Callable[[Processor], Processor]:
     def decorator(func: Processor) -> Processor:
         @wraps(func)
@@ -64,46 +72,47 @@ def stringify_processor(dn: str, entry: dict, record: Record) -> None:
 
 
 @chain_order(order=2)
-def dn_processor(dn: str, entry: dict, record: Record) -> None:
-    if not (matched := IDENTIFIER_REGEX.search(dn)):
+def entry_validation_processor(dn: str, entry: dict, record: Record):
+    if not IDENTIFIER_REGEX.search(dn):
         raise InvalidDistinguishedNameError(f"Invalid DN: {dn}")
 
+    if password := entry.get("userPassword"):
+        if not PASSWORD_REGEX.search(password):
+            raise InvalidAttributeValueError(f"Invalid password for DN: {dn}")
+
+    if new_superior := entry.get("newsuperior"):
+        if not IDENTIFIER_REGEX.search(new_superior):
+            raise InvalidAttributeValueError(f"Invalid newsuperior for DN: {dn}")
+
+    if newrdn := entry.get("newrdn"):
+        if not NEWRDN_REGEX.search(newrdn):
+            raise InvalidAttributeValueError(f"Invalid newrdn for DN: {dn}")
+
+    if member_uid := entry.get("memberUid"):
+        if not all(uid.isdigit() for uid in member_uid):
+            raise InvalidAttributeValueError(f"Invalid memberUid for DN: {dn}")
+
+
+@chain_order(order=3)
+def dn_processor(dn: str, entry: dict, record: Record) -> None:
+    matched = IDENTIFIER_REGEX.search(dn)
     record.model = (
         User if matched.group("id_attribute").casefold() == USER_IDENTIFIER_ATTRIBUTE else Group
     )
     record.identifier = matched.group("identifier")
 
 
-@chain_order(order=3)
+@chain_order(order=4)
 def password_processor(dn: str, entry: dict, record: Record) -> None:
     if not (password := entry.get("userPassword")):
         return
 
-    if not (matched := PASSWORD_REGEX.search(password)):
-        raise InvalidAttributeValueError(f"Invalid password for DN: {dn}")
-
+    matched = PASSWORD_REGEX.search(password)
     prefix = matched.group("prefix").casefold()
     hashed_password = matched.group("password")
 
     entry[PASSWORD_ALGORITHM_REGISTRY[prefix]] = hashed_password
     entry.pop("userPassword", None)
-
-
-@chain_order(order=4)
-def entry_validation_processor(dn: str, entry: dict, record: Record):
-    if new_superior := entry.get("newsuperior"):
-        if not IDENTIFIER_REGEX.search(new_superior):
-            raise InvalidAttributeValueError(f"Invalid newsuperior for DN: {dn}")
-
-    if newrdn := entry.get("newrdn"):
-        if not (matched := NEWRDN_REGEX.search(newrdn)):
-            raise InvalidAttributeValueError(f"Invalid newrdn for DN: {dn}")
-
-        entry["newrdn"] = matched.group("newrdn")
-
-    if member_uid := entry.get("memberUid"):
-        if not all(uid.isdigit() for uid in member_uid):
-            raise InvalidAttributeValueError(f"Invalid memberUid for DN: {dn}")
 
 
 @chain_order(order=5)
@@ -122,7 +131,7 @@ def operation_processor(dn: str, entry: dict, record: Record) -> None:
 
         case "modrdn" | "moddn" if "newrdn" in entry:
             record.op = OperationType.UPDATE
-            entry["cn"] = entry["newrdn"]
+            entry["cn"] = _extract_newrdn(entry["newrdn"])
             return
 
         case "modify" if "memberUid" in entry:
