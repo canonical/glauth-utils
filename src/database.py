@@ -45,7 +45,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String, name="name", unique=True)
     uid_number: Mapped[int] = mapped_column(name="uidnumber")
     gid_number: Mapped[int] = mapped_column(
-        ForeignKey("groups.gidnumber", onupdate="cascade"),
+        ForeignKey("ldapgroups.gidnumber", onupdate="cascade"),
         name="primarygroup",
     )
     other_groups: Mapped[set] = mapped_column(GroupSet, name="othergroups")
@@ -66,7 +66,7 @@ class User(Base):
 
 
 class Group(Base):
-    __tablename__ = "groups"
+    __tablename__ = "ldapgroups"
 
     id = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(name="name", unique=True)
@@ -80,11 +80,11 @@ class IncludeGroup(Base):
 
     id = mapped_column(Integer, primary_key=True)
     parent_group_id: Mapped[int] = mapped_column(
-        ForeignKey("groups.gidnumber", onupdate="cascade"),
+        ForeignKey("ldapgroups.gidnumber", onupdate="cascade"),
         name="parentgroupid",
     )
     child_group_id: Mapped[int] = mapped_column(
-        ForeignKey("groups.gidnumber", onupdate="cascade"),
+        ForeignKey("ldapgroups.gidnumber", onupdate="cascade"),
         name="includegroupid",
     )
 
