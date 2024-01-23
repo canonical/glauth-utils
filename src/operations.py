@@ -1,3 +1,6 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 from abc import ABC, abstractmethod
 from dataclasses import replace
 from typing import Callable, Final, Optional, Type, TypeVar

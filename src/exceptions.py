@@ -1,3 +1,7 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+
 class UtilityError(Exception):
     """Base class for custom errors."""
 
