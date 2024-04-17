@@ -22,16 +22,16 @@ It aims to supplement the `glauth-k8s` charmed operator by the following:
 The `glauth-utils` charmed operator can be deployed using the following command:
 
 ```shell
-$ juju deploy glauth-utils --channel edge --trust
+juju deploy glauth-utils --channel edge --trust
 ```
 
 ## Integrations
 
 The `glauth-utils` charmed operator requires a Juju integration with the
-`glauth-k8s` charmed operator by using the `auxiliary` Juju interface:
+`glauth-k8s` charmed operator by using the `glauth-auxiliary` Juju interface:
 
 ```shell
-$ juju integrate glauth-utils:auxiliary glauth-k8s:auxiliary
+juju integrate glauth-utils:glauth-auxiliary glauth-k8s:glauth-auxiliary
 ```
 
 The following diagram illustrates the overall deployment architecture:
@@ -50,10 +50,10 @@ PostgreSQL database).
 
 ```shell
 # 1. Transfer the LDIF file to the remote charm container in the leader unit
-$ juju scp -m <model> <path-to-ldif-file> <leader-unit>:<path-to-ldif-file-in-remote-container>
+juju scp -m <model> <path-to-ldif-file> <leader-unit>:<path-to-ldif-file-in-remote-container>
 
 # 2. Apply the LDIF file
-$ juju run <leader-unit> apply-ldif path=<path-to-ldif-file-in-remote-container>
+juju run <leader-unit> apply-ldif path=<path-to-ldif-file-in-remote-container>
 ```
 
 > 📚 Please refer to the [LDIF samples](SAMPLES.md) to see what directory update
@@ -69,7 +69,7 @@ charmed operator's backend datastore.
 > ⚠️ **NOTE**
 >
 > The backend relational database schema is determined by a GLAuth's database
-> plugin (e.g. the[ glauth-postgres](https://github.com/glauth/glauth-postgres)
+> plugin (e.g. the[glauth-postgres](https://github.com/glauth/glauth-postgres)
 > plugin).
 
 ## Contributing

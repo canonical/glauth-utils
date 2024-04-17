@@ -5,6 +5,8 @@ name: glauth-utils
 
 display-name: GLAuth Utils
 
+docs: https//discourse.charmhub.io/t/13948
+
 summary: |
   GLAuth Utility Charmed Operator for Kubernetes
 

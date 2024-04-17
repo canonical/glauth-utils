@@ -4,8 +4,8 @@ You can use the environments created by `tox` for development. It helps
 install `pre-commit` hooks and `mypy` type checker.
 
 ```shell
-$ tox -e dev
-$ source .tox/dev/bin/activate
+tox -e dev
+source .tox/dev/bin/activate
 ```
 
 ## Testing
@@ -15,10 +15,10 @@ pre-configured environments that can be used for linting and formatting code
 when you're preparing contributions to the charm:
 
 ```shell
-$ tox -e fmt           # update your code according to linting rules
-$ tox -e lint          # code style
-$ tox -e unit          # unit tests
-$ tox -e integration   # integration tests
+tox -e fmt           # update your code according to linting rules
+tox -e lint          # code style
+tox -e unit          # unit tests
+tox -e integration   # integration tests
 ```
 
 > ⚠️ **NOTE**
@@ -32,7 +32,7 @@ $ tox -e integration   # integration tests
 Build the charm in this git repository using:
 
 ```shell
-$ charmcraft pack -v
+charmcraft pack -v
 ```
 
 ## Render the database schema diagram
@@ -41,5 +41,5 @@ The following command generates an SVG diagram of the database schema used by
 the backend datastore.
 
 ```shell
-$ tox -e render-database-diagram
+tox -e render-database-diagram
 ```
