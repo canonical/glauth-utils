@@ -1,7 +1,7 @@
 apply-ldif:
-  description: Apply the changes describe in the LDIF file.
+  description: Apply the data changes described in the LDIF file.
   params:
     path:
-      description: The  path to the LDIF file in remote container filesystem
+      description: The  path to the LDIF file in the remote container filesystem
       type: string
   required: ["path"]

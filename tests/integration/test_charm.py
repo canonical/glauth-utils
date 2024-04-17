@@ -12,6 +12,7 @@ from pytest_operator.plugin import OpsTest
 logger = logging.getLogger(__name__)
 
 METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
+CERTIFICATE_PROVIDER_APP = "self-signed-certificates"
 GLAUTH_UTILS_APP = METADATA["name"]
 GLAUTH_APP = "glauth-k8s"
 DB_APP = "postgresql-k8s"
@@ -20,6 +21,11 @@ DB_APP = "postgresql-k8s"
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
 async def test_build_and_deploy(ops_test: OpsTest) -> None:
+    await ops_test.model.deploy(
+        CERTIFICATE_PROVIDER_APP,
+        channel="stable",
+        trust=True,
+    )
     await ops_test.model.deploy(
         DB_APP,
         channel="14/stable",
@@ -31,6 +37,14 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         trust=True,
     )
     await ops_test.model.integrate(GLAUTH_APP, DB_APP)
+    await ops_test.model.integrate(GLAUTH_APP, CERTIFICATE_PROVIDER_APP)
+
+    await ops_test.model.wait_for_idle(
+        apps=[CERTIFICATE_PROVIDER_APP, DB_APP, GLAUTH_APP],
+        status="active",
+        raise_on_blocked=False,
+        timeout=1000,
+    )
 
     charm_path = await ops_test.build_charm(".")
     await ops_test.model.deploy(
@@ -39,7 +53,6 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         trust=True,
         series="jammy",
     )
-
     await ops_test.model.integrate(GLAUTH_UTILS_APP, GLAUTH_APP)
 
     await ops_test.model.wait_for_idle(
