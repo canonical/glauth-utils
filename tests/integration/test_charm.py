@@ -31,6 +31,14 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
         channel="14/stable",
         trust=True,
     )
+
+    await ops_test.model.wait_for_idle(
+        apps=[CERTIFICATE_PROVIDER_APP, DB_APP],
+        status="active",
+        raise_on_blocked=False,
+        timeout=1000,
+    )
+
     await ops_test.model.deploy(
         GLAUTH_APP,
         channel="edge",
@@ -38,6 +46,13 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     )
     await ops_test.model.integrate(GLAUTH_APP, DB_APP)
     await ops_test.model.integrate(GLAUTH_APP, CERTIFICATE_PROVIDER_APP)
+
+    await ops_test.model.wait_for_idle(
+        apps=[CERTIFICATE_PROVIDER_APP, DB_APP, GLAUTH_APP],
+        status="active",
+        raise_on_blocked=False,
+        timeout=1000,
+    )
 
     await ops_test.model.wait_for_idle(
         apps=[CERTIFICATE_PROVIDER_APP, DB_APP, GLAUTH_APP],
