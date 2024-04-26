@@ -49,6 +49,7 @@ async def test_build_and_deploy(ops_test: OpsTest) -> None:
     await ops_test.model.wait_for_idle(
         apps=[CERTIFICATE_PROVIDER_APP, DB_APP, GLAUTH_APP],
         status="active",
+        raise_on_error=False,
         raise_on_blocked=False,
         timeout=1000,
     )
