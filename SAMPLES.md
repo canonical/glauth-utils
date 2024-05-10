@@ -15,6 +15,7 @@ gidNumber: 5501
 ```
 
 > ⚠️ **NOTE**
+>
 > - `ou` and `gidNumber` **MUST** be provided.
 > - `ou` **MUST** be unique.
 
@@ -28,6 +29,7 @@ gidNumber: 5502
 ```
 
 > ⚠️ **NOTE**
+>
 > - This assumes that the Group `superheros` already exists.
 
 ## Modify a Group
@@ -76,6 +78,7 @@ userPassword: {SHA256}6478579e37aff45f013e14eeb30b3cc56c72ccdc310123bcdf53e0333e
 ```
 
 > ⚠️ **NOTE**
+>
 > - `cn`, `uidNumber`, and `gidNumber` **MUST** be provided.
 > - `cn` **MUST** be unique.
 > - `userPassword` **ONLY** supports SHA-256 (prefixed with `{SHA256}`) and
@@ -94,6 +97,7 @@ delete: mail
 ```
 
 > ⚠️ **NOTE**
+>
 > - Custom attributes are also supported.
 
 ## Rename a User
@@ -137,6 +141,7 @@ memberUid: 5002
 ```
 
 > ⚠️ **NOTE**
+>
 > - The group should **NOT** be the user's primary group.
 
 ## Remove Users from additional Group
@@ -150,4 +155,5 @@ memberUid: 5002
 ```
 
 > ⚠️ **NOTE**
+>
 > - The group should **NOT** be the user's primary group.
