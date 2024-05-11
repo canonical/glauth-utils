@@ -25,6 +25,12 @@ repos:
       args: ["--config-file", "pyproject.toml"]
       additional_dependencies:
         - types-PyYAML
+- repo: https://github.com/compilerla/conventional-pre-commit
+  rev: v3.2.0
+  hooks:
+    - id: conventional-pre-commit
+      stages: [commit-msg]
+      args: [--strict]
 - repo: https://github.com/igorshubovych/markdownlint-cli
   rev: v0.39.0
   hooks:

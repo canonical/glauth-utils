@@ -8,6 +8,7 @@
 
 [![Continuous Integration Status](https://github.com/canonical/glauth-utils/actions/workflows/on_push.yaml/badge.svg?branch=main)](https://github.com/canonical/glauth-utils/actions?query=branch%3Amain)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196.svg)](https://conventionalcommits.org)
 
 This repository holds a utility Kubernetes charmed operator
 for [GLAuth Kubernetes Charmed Operator](https://github.com/canonical/glauth-k8s-operator).
