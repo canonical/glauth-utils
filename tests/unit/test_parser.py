@@ -1,14 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import pytest
-from constants import (
-    LDIF_SANITIZE_ATTRIBUTES,
-    SUPPORTED_LDIF_ATTRIBUTES,
-    OperationType,
-)
-from database import Group, User
-from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from parser import (
     Record,
     attribute_processor,
@@ -19,6 +11,12 @@ from parser import (
     password_processor,
     stringify_processor,
 )
+
+import pytest
+
+from constants import LDIF_SANITIZE_ATTRIBUTES, SUPPORTED_LDIF_ATTRIBUTES, OperationType
+from database import Group, User
+from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 
 
 class TestStringifyProcessor:

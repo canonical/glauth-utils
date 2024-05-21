@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from functools import wraps
 from typing import Any, Callable, Iterable, List, Optional, TextIO, Type
 
+from ldif import LDIFRecordList
+
 from constants import (
     GROUP_HIERARCHY_REGEX,
     IDENTIFIER_REGEX,
@@ -19,7 +21,6 @@ from constants import (
 )
 from database import Base, Group, User
 from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
-from ldif import LDIFRecordList
 
 Processor = Callable[[str, dict, "Record"], None]
 
