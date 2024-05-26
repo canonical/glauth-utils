@@ -1,13 +1,14 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from parser import Parser
 from pathlib import Path
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 from constants import LDIF_PARSER_IGNORED_ATTRIBUTES
 from operations import OPERATIONS
-from parser import Parser
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
 
 def apply_ldif(ldif_file: str | Path, target_database: str):

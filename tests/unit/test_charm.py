@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from conftest import LDIF_FILE_PATH
-from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import ActionFailed, Harness
 
+from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from lib.charms.glauth_utils.v0.glauth_auxiliary import AuxiliaryData
 
 GLAUTH_APP_NAME = "glauth-k8s"

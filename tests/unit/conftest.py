@@ -1,10 +1,14 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from parser import Record, stringify_processor
 from typing import Callable
 from unittest.mock import MagicMock
 
 import pytest
+from ops.testing import Harness
+from pytest_mock import MockerFixture
+
 from charm import GLAuthUtilsCharm
 from constants import (
     AUXILIARY_INTEGRATION_NAME,
@@ -12,10 +16,6 @@ from constants import (
     USER_IDENTIFIER_ATTRIBUTE,
 )
 from database import Group, User
-from ops.testing import Harness
-from parser import Record, stringify_processor
-from pytest_mock import MockerFixture
-
 from lib.charms.glauth_utils.v0.glauth_auxiliary import AuxiliaryData
 
 LDIF_FILE_PATH = "foo"

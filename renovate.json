@@ -10,7 +10,7 @@
     ":semanticCommits",
     ":semanticCommitScope(deps)",
     "helpers:pinGitHubActionDigests",
-    "enablePreCommit"
+    ":enablePreCommit"
   ],
   "automergeType": "pr",
   "rebaseWhen": "behind-base-branch",
