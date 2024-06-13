@@ -32,8 +32,8 @@ jobs:
         with:
           provider: microk8s
           channel: 1.28-strict/stable
-          juju-channel: 3.2
-          bootstrap-options: '--agent-version=3.2.0'
+          juju-channel: 3.4
+          bootstrap-options: '--agent-version=3.4.0'
 
       - name: Run integration tests
         run: tox -e build-prerequisites,integration -- --model testing
@@ -46,6 +46,10 @@ jobs:
         run: juju status --relations
         if: failure()
 
-      - name: Get juju logs
-        run: juju debug-log --replay --include unit-glauth-utils-0
+      - name: Get juju glauth-utils logs
+        run: juju debug-log --replay --include glauth-utils
+        if: failure()
+
+      - name: Get glauth juju logs
+        run: juju debug-log --replay --include glauth-k8s
         if: failure()
