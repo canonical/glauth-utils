@@ -3,7 +3,11 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import replace
+from parser import Record
 from typing import Callable, Final, Optional, Type, TypeVar
+
+from sqlalchemy import ColumnExpressionArgument, ScalarResult, select
+from sqlalchemy.orm import Session
 
 from constants import (
     LDIF_TO_GROUP_MODEL_MAPPINGS,
@@ -12,9 +16,6 @@ from constants import (
     OperationType,
 )
 from database import Base, Group, IncludeGroup, User
-from parser import Record
-from sqlalchemy import ColumnExpressionArgument, ScalarResult, select
-from sqlalchemy.orm import Session
 
 LDIF_MODEL_MAPPINGS = {
     User: LDIF_TO_USER_MODEL_MAPPINGS,
