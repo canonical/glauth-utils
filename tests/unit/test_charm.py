@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from conftest import LDIF_FILE_PATH
-from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.testing import ActionFailed, Harness
 
+from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from lib.charms.glauth_utils.v0.glauth_auxiliary import AuxiliaryData
 
 GLAUTH_APP_NAME = "glauth-k8s"
@@ -27,7 +27,10 @@ class TestStartEvent:
         assert isinstance(harness.model.unit.status, WaitingStatus)
 
     def test_on_start(
-        self, harness: Harness, auxiliary_integration: int, auxiliary_data_ready: AuxiliaryData
+        self,
+        harness: Harness,
+        auxiliary_integration: int,
+        auxiliary_data_ready: AuxiliaryData,
     ) -> None:
         harness.charm.on.start.emit()
         assert isinstance(harness.model.unit.status, ActiveStatus)
@@ -35,14 +38,20 @@ class TestStartEvent:
 
 class TestAuxiliaryReadyEvent:
     def test_on_auxiliary_ready(
-        self, harness: Harness, auxiliary_integration: int, auxiliary_data_ready: AuxiliaryData
+        self,
+        harness: Harness,
+        auxiliary_integration: int,
+        auxiliary_data_ready: AuxiliaryData,
     ) -> None:
         assert isinstance(harness.model.unit.status, ActiveStatus)
 
 
 class TestAuxiliaryUnavailableEvent:
     def test_on_auxiliary_unavailable(
-        self, harness: Harness, auxiliary_integration: int, auxiliary_data_ready: AuxiliaryData
+        self,
+        harness: Harness,
+        auxiliary_integration: int,
+        auxiliary_data_ready: AuxiliaryData,
     ) -> None:
         harness.remove_relation(auxiliary_integration)
         assert isinstance(harness.model.unit.status, BlockedStatus)

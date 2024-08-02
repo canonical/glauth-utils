@@ -1,14 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import pytest
-from constants import (
-    LDIF_SANITIZE_ATTRIBUTES,
-    SUPPORTED_LDIF_ATTRIBUTES,
-    OperationType,
-)
-from database import Group, User
-from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from parser import (
     Record,
     attribute_processor,
@@ -19,6 +11,12 @@ from parser import (
     password_processor,
     stringify_processor,
 )
+
+import pytest
+
+from constants import LDIF_SANITIZE_ATTRIBUTES, SUPPORTED_LDIF_ATTRIBUTES, OperationType
+from database import Group, User
+from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 
 
 class TestStringifyProcessor:
@@ -61,7 +59,11 @@ class TestEntryValidationProcessor:
         ],
     )
     def test_invalid_password(
-        self, password: dict, user_dn: str, stringify_user_entry: dict, user_record: Record
+        self,
+        password: dict,
+        user_dn: str,
+        stringify_user_entry: dict,
+        user_record: Record,
     ) -> None:
         entry = {**stringify_user_entry, **password}
         with pytest.raises(InvalidAttributeValueError):
@@ -136,7 +138,11 @@ class TestOperationProcessor:
         ["modrdn", "moddn"],
     )
     def test_move_user(
-        self, change_type: str, user_dn: str, stringify_user_entry: dict, user_record: Record
+        self,
+        change_type: str,
+        user_dn: str,
+        stringify_user_entry: dict,
+        user_record: Record,
     ) -> None:
         entry = {
             **stringify_user_entry,
@@ -185,7 +191,11 @@ class TestOperationProcessor:
         ["modrdn", "moddn"],
     )
     def test_rename_user(
-        self, change_type: str, user_dn: str, stringify_user_entry: dict, user_record: Record
+        self,
+        change_type: str,
+        user_dn: str,
+        stringify_user_entry: dict,
+        user_record: Record,
     ) -> None:
         entry = {
             **stringify_user_entry,

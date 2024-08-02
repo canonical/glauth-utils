@@ -9,17 +9,18 @@
 import logging
 from pathlib import Path
 
-from action import apply_ldif
 from charms.glauth_utils.v0.glauth_auxiliary import (
     AuxiliaryReadyEvent,
     AuxiliaryRequirer,
     AuxiliaryUnavailableEvent,
 )
-from constants import AUXILIARY_INTEGRATION_NAME
-from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 from ops.charm import ActionEvent, CharmBase, StartEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus, WaitingStatus
+
+from action import apply_ldif
+from constants import AUXILIARY_INTEGRATION_NAME
+from exceptions import InvalidAttributeValueError, InvalidDistinguishedNameError
 
 logger = logging.getLogger(__name__)
 

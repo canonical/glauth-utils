@@ -2,6 +2,31 @@
 # See https://juju.is/docs/sdk/charmcraft-config for guidance.
 
 type: charm
+name: glauth-utils
+title: GLAuth Utils
+summary: |
+  GLAuth Utility Charmed Operator for Kubernetes
+description: |
+  A Juju charm to run utilities for the GLAuth Kubernetes Charmed Operator.
+links:
+  documentation: https://discourse.charmhub.io/t/13948
+  source: https://github.com/canonical/glauth-utils
+  issues: https://github.com/canonical/glauth-utils/issues
+
+requires:
+  glauth-auxiliary:
+    interface: glauth_auxiliary
+    limit: 1
+
+actions:
+  apply-ldif:
+    description: Apply the data changes described in the LDIF file.
+    params:
+      path:
+        description: The  path to the LDIF file in the remote container filesystem
+        type: string
+    required: ["path"]
+
 bases:
   - build-on:
     - name: ubuntu
@@ -9,6 +34,7 @@ bases:
     run-on:
     - name: ubuntu
       channel: "22.04"
+
 parts:
   charm:
     build-packages:
@@ -16,5 +42,7 @@ parts:
       - libldap2-dev
       - libsasl2-dev
       - libssl-dev
+      - rustc
+      - cargo
     charm-binary-python-packages:
       - psycopg[binary]

@@ -22,16 +22,34 @@ show_missing = true
 minversion = "6.0"
 log_cli_level = "INFO"
 
-# Formatting tools configuration
-[tool.black]
-line-length = 99
-target-version = ["py310", "py311"]
+# Linting and formatting tools configuration
+[tool.codespell]
+# https://github.com/codespell-project/codespell
+skip = ".git,.tox,build,lib,venv,.venv,.mypy_cache,icon.svg,__pycache__"
 
-# Linting tools configuration
+[tool.isort]
+# Profiles: https://pycqa.github.io/isort/docs/configuration/profiles.html
+line_length = 99
+profile = "black"
+
 [tool.ruff]
+# Default settings: https://docs.astral.sh/ruff/configuration/
+# Settings: https://docs.astral.sh/ruff/settings/
 line-length = 99
-select = ["E", "W", "F", "C", "N", "D", "I001"]
-extend-ignore = [
+include = ["pyproject.toml", "src/**/*.py", "tests/**/*.py", "lib/charms/glauth_utils/**/*.py"]
+extend-exclude = ["__pycache__", "*.egg_info"]
+preview = true
+
+[tool.ruff.lint]
+# Rules: https://docs.astral.sh/ruff/rules/
+select = ["E", "W", "F", "C", "N", "D", "CPY"]
+ignore = [
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D105",
+    "D107",
     "D203",
     "D204",
     "D213",
@@ -43,20 +61,40 @@ extend-ignore = [
     "D408",
     "D409",
     "D413",
+    "E501",
+    "N818"
 ]
-ignore = ["D100", "D101", "D102", "D103", "D105", "D107", "E501", "N818"]
-extend-exclude = ["__pycache__", "*.egg_info"]
 per-file-ignores = {"tests/*" = ["D100","D101","D102","D103","D104"]}
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.flake8-copyright]
+author = "Canonical Ltd."
+
+[tool.ruff.lint.mccabe]
 max-complexity = 10
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
+# Type checking tools configuration
 [tool.mypy]
 pretty = true
-python_version = "3.10"
+mypy_path = "./src:./lib/:./tests"
+# Exclude non-glauth libraries
+exclude = 'lib/charms/((?!glauth_utils/).)'
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_configs = true
+show_traceback = true
+show_error_codes = true
+namespace_packages = true
 explicit_package_bases = true
-ignore_missing_imports = true
+check_untyped_defs = true
+allow_redefinition = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
 disable_error_code = "attr-defined"
+ignore_missing_imports = true
+
+# Ignore libraries that do not have type hint nor stubs
+[[tool.mypy.overrides]]
+module = ["ops.*", "pytest.*", "pytest_operator.*", "urllib3.*", "jinja2.*", "lightkube.*", "pytest_mock.*"]

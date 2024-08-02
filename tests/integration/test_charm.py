@@ -11,7 +11,7 @@ from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
-METADATA = yaml.safe_load(Path("./metadata.yaml").read_text())
+METADATA = yaml.safe_load(Path("./charmcraft.yaml").read_text())
 CERTIFICATE_PROVIDER_APP = "self-signed-certificates"
 GLAUTH_UTILS_APP = METADATA["name"]
 GLAUTH_APP = "glauth-k8s"
