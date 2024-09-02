@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
       - name: Release charm to channel
-        uses: canonical/charming-actions/release-charm@2.4.0
+        uses: canonical/charming-actions/release-charm@631c2d944da2bd12430f1f3a954c8fffcf2385cd # 2.4.0
         with:
           credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

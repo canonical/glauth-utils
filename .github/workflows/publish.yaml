@@ -32,13 +32,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
           ref: ${{ inputs.source_branch }}
 
       - name: Select CharmHub channel
-        uses: canonical/charming-actions/channel@2.4.0
+        uses: canonical/charming-actions/channel@631c2d944da2bd12430f1f3a954c8fffcf2385cd # 2.4.0
         id: select-channel
         if: ${{ inputs.destination_channel == '' }}
 
@@ -51,7 +51,7 @@ jobs:
           echo "::set-output name=destination_channel::$destination_channel"
 
       - name: Upload charm to CharmHub
-        uses: canonical/charming-actions/upload-charm@2.4.0
+        uses: canonical/charming-actions/upload-charm@631c2d944da2bd12430f1f3a954c8fffcf2385cd # 2.4.0
         with:
           credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
