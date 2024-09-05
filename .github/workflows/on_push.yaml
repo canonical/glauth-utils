@@ -9,7 +9,7 @@ on:
 jobs:
   tests:
     name: Run Tests
-    uses: ./.github/workflows/test.yaml
+    uses: ./.github/workflows/tests.yaml
 
   publish-charm:
     name: Publish Charm
