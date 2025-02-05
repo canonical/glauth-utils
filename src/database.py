@@ -15,10 +15,10 @@ class JsonEncodeDict(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value: Optional[dict], dialect: Dialect):
-        return json.dumps(value) if value is not None else None
+        return json.dumps(value) if value is not None else "{}"
 
     def process_result_value(self, value: Optional[str], dialect: Dialect):
-        return json.loads(value) if value is not None else None
+        return json.loads(value) if value is not None else {}
 
 
 class GroupSet(TypeDecorator):
@@ -49,18 +49,18 @@ class User(Base):
         name="primarygroup",
     )
     other_groups: Mapped[set] = mapped_column(GroupSet, name="othergroups")
-    given_name: Mapped[Optional[str]] = mapped_column(name="givenname")
-    surname: Mapped[Optional[str]] = mapped_column(name="sn")
-    email: Mapped[Optional[str]] = mapped_column(name="mail")
-    login_shell: Mapped[Optional[str]] = mapped_column(name="loginshell")
-    home_directory: Mapped[Optional[str]] = mapped_column(name="homedirectory")
+    given_name: Mapped[str] = mapped_column(name="givenname", default="")
+    surname: Mapped[str] = mapped_column(name="sn", default="")
+    email: Mapped[str] = mapped_column(name="mail", default="")
+    login_shell: Mapped[str] = mapped_column(name="loginshell", default="")
+    home_directory: Mapped[str] = mapped_column(name="homedirectory", default="")
     disabled = mapped_column(SmallInteger, default=0)
-    password_sha256: Mapped[Optional[str]] = mapped_column(name="passsha256", default="")
-    password_bcrypt: Mapped[Optional[str]] = mapped_column(name="passbcrypt", default="")
-    otp_secret: Mapped[Optional[str]] = mapped_column(name="otpsecret")
-    yubi_key: Mapped[Optional[str]] = mapped_column(name="yubikey")
-    ssh_keys: Mapped[Optional[str]] = mapped_column(name="sshkeys")
-    custom_attributes: Mapped[Optional[dict]] = mapped_column(JsonEncodeDict, name="custattr")
+    password_sha256: Mapped[str] = mapped_column(name="passsha256", default="")
+    password_bcrypt: Mapped[str] = mapped_column(name="passbcrypt", default="")
+    otp_secret: Mapped[str] = mapped_column(name="otpsecret", default="")
+    yubi_key: Mapped[Optional[str]] = mapped_column(name="yubikey", default="")
+    ssh_keys: Mapped[Optional[str]] = mapped_column(name="sshkeys", default="")
+    custom_attributes: Mapped[dict] = mapped_column(JsonEncodeDict, name="custattr")
 
     group: Mapped["Group"] = relationship(back_populates="users")
 
