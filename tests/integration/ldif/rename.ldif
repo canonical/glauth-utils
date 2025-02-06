@@ -1,0 +1,5 @@
+# Rename a user
+dn: cn=rename,ou=rename,dc=glauth,dc=com
+changetype: modrdn
+newrdn: cn=new_rename
+deleteoldrdn: 1

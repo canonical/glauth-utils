@@ -1,0 +1,13 @@
+# Move a group
+dn: ou=sub,dc=glauth,dc=com
+objectClass: posixGroup
+changetype: modrdn
+deleteoldrdn: 1
+newsuperior: ou=top,ou=groups,dc=glauth,dc=com
+
+# Move a user
+dn: cn=move,ou=top,dc=glauth,dc=com
+changetype: modrdn
+newrdn: cn=move
+deleteoldrdn: 1
+newsuperior: ou=sub,ou=top,ou=groups,dc=glauth,dc=com

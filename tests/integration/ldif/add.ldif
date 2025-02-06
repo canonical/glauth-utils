@@ -1,0 +1,23 @@
+# Add a group
+dn: ou=superheros,dc=glauth,dc=com
+objectClass: posixGroup
+ou: superheros
+gidNumber: 5502
+
+# Add a group associated with another group
+dn: ou=caped,ou=superheros,dc=glauth,dc=com
+objectClass: posixGroup
+ou: caped
+gidNumber: 5503
+
+# Add a user
+dn: cn=johndoe,ou=superheros,dc=glauth,dc=com
+changetype: add
+objectClass: posixAccount
+uidNumber: 5002
+gidNumber: 5502
+cn: johndoe
+sn: doe
+uid: john
+mail: john@glauth.com
+userPassword: {SHA256}6478579e37aff45f013e14eeb30b3cc56c72ccdc310123bcdf53e0333e3f416a

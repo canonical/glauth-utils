@@ -1,0 +1,14 @@
+# Modify a group
+dn: ou=svcaccts,dc=glauth,dc=com
+changetype: modify
+replace: gidNumber
+gidNumber: 5514
+
+# Modify a user
+dn: cn=modify,ou=smoker,dc=glauth,dc=com
+changetype: modify
+add: loginShell
+loginShell: /bin/bash
+replace: sn
+sn: wick
+delete: mail
