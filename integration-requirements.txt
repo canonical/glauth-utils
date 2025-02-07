@@ -1,4 +1,6 @@
 -r requirements.txt
+aiofiles
 juju
+psycopg[binary]
 pytest
 pytest-operator==0.39.0

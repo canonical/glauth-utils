@@ -1,0 +1,7 @@
+# Delete a user
+dn: cn=delete,ou=delete,dc=glauth,dc=com
+changetype: delete
+
+# Delete a group
+dn: ou=delete,dc=glauth,dc=com
+changetype: delete

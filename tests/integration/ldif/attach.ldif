@@ -1,0 +1,11 @@
+# Attach the user to a group
+dn: ou=secondary,dc=glauth,dc=com
+changetype: modify
+add: memberUid
+memberUid: 5006
+
+# Detach the user from a group
+dn: ou=secondary,dc=glauth,dc=com
+changetype: modify
+delete: memberUid
+memberUid: 5007
