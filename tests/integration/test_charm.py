@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 async def test_deploy_dependencies(ops_test: OpsTest) -> None:
     await ops_test.model.deploy(
         CERTIFICATE_PROVIDER_APP,
-        channel="stable",
+        channel="latest/stable",
         trust=True,
     )
     await ops_test.model.deploy(
