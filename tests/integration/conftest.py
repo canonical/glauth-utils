@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 import functools
+import os
 import re
 from base64 import b64decode
 from contextlib import contextmanager
@@ -125,6 +126,16 @@ def run_action(ops_test: OpsTest) -> Callable:
         return action.results
 
     return _run_action
+
+
+@pytest_asyncio.fixture(scope="module")
+async def local_charm(ops_test: OpsTest) -> Path:
+    # in GitHub CI, charms are built with charmcraftcache and uploaded to $CHARM_PATH
+    charm = os.getenv("CHARM_PATH")
+    if not charm:
+        # fall back to build locally - required when run outside of GitHub CI
+        charm = await ops_test.build_charm(".")
+    return charm
 
 
 async def scp_ldif_file(ops_test: OpsTest, source: str) -> None:
