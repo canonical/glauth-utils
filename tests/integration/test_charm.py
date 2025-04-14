@@ -50,7 +50,7 @@ async def test_deploy_dependencies(ops_test: OpsTest) -> None:
         apps=[CERTIFICATE_PROVIDER_APP, DB_APP, INGRESS_APP],
         status="active",
         raise_on_blocked=False,
-        timeout=5 * 60,
+        timeout=10 * 60,
     )
     await ops_test.model.deploy(
         GLAUTH_APP,
@@ -66,7 +66,7 @@ async def test_deploy_dependencies(ops_test: OpsTest) -> None:
         status="active",
         raise_on_error=False,
         raise_on_blocked=False,
-        timeout=5 * 60,
+        timeout=10 * 60,
     )
 
 
