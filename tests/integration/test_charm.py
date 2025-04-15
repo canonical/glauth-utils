@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 import logging
+from pathlib import Path
 from typing import Optional
 
 import ldap
@@ -49,7 +50,7 @@ async def test_deploy_dependencies(ops_test: OpsTest) -> None:
         apps=[CERTIFICATE_PROVIDER_APP, DB_APP, INGRESS_APP],
         status="active",
         raise_on_blocked=False,
-        timeout=5 * 60,
+        timeout=10 * 60,
     )
     await ops_test.model.deploy(
         GLAUTH_APP,
@@ -65,16 +66,15 @@ async def test_deploy_dependencies(ops_test: OpsTest) -> None:
         status="active",
         raise_on_error=False,
         raise_on_blocked=False,
-        timeout=5 * 60,
+        timeout=10 * 60,
     )
 
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, initialize_database: None) -> None:
-    charm_path = await ops_test.build_charm(".")
+async def test_build_and_deploy(ops_test: OpsTest, initialize_database: None, local_charm: Path) -> None:
     await ops_test.model.deploy(
-        str(charm_path),
+        entity_url=str(local_charm),
         application_name=GLAUTH_UTILS_APP,
         trust=True,
         series="jammy",

@@ -9,20 +9,18 @@ on:
       origin-channel:
         description: 'Origin Channel'
         required: true
+      base-channel:
+        description: 'Charmcraft Base Channel'
+        required: false
 
 jobs:
   promote-charm:
-    name: Promote charm
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          fetch-depth: 0
-      - name: Release charm to channel
-        uses: canonical/charming-actions/release-charm@1753e0803f70445132e92acd45c905aba6473225 # 2.7.0
-        with:
-          credentials: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          destination-channel: ${{ github.event.inputs.destination-channel }}
-          origin-channel: ${{ github.event.inputs.origin-channel }}
+      name: Promote charm
+      uses: canonical/identity-team/.github/workflows/charm-promotion.yaml@3bcf7c8d36b4e51e5a65d27041389d7456c17b57 # v1.8.0
+      with:
+        base-channel: ${{ github.event.inputs.base-channel }}
+        destination-channel: ${{ github.event.inputs.destination-channel }}
+        origin-channel: ${{ github.event.inputs.origin-channel }}
+      secrets:
+        CHARMCRAFT_CREDENTIALS: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
+        PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
