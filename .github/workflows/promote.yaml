@@ -16,7 +16,7 @@ on:
 jobs:
   promote-charm:
       name: Promote charm
-      uses: canonical/identity-team/.github/workflows/charm-promotion.yaml@3bcf7c8d36b4e51e5a65d27041389d7456c17b57 # v1.8.0
+      uses: canonical/identity-team/.github/workflows/charm-promotion.yaml@74923c8fd716e55207cf19359621902c45b24b52 # v1.8.2
       with:
         base-channel: ${{ github.event.inputs.base-channel }}
         destination-channel: ${{ github.event.inputs.destination-channel }}
