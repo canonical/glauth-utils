@@ -72,6 +72,11 @@ charmed operator's backend datastore.
 > plugin (e.g. the[glauth-postgres](https://github.com/glauth/glauth-postgres)
 > plugin).
 
+## Security
+
+Please see [SECURITY.md](https://github.com/canonical/glauth-utils/blob/main/SECURITY.md)
+for guidelines on reporting security issues.
+
 ## Contributing
 
 Please refer to the [Contributing](CONTRIBUTING.md) for developer guidance.
