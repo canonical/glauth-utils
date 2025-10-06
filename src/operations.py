@@ -3,6 +3,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import replace
+from logging import WARN
 from parser import Record
 from typing import Callable, Final, Optional, Type, TypeVar
 
@@ -10,12 +11,16 @@ from sqlalchemy import ColumnExpressionArgument, ScalarResult, select
 from sqlalchemy.orm import Session
 
 from constants import (
+    GLAUTH_UTILS_LOGGING_ID,
     LDIF_TO_GROUP_MODEL_MAPPINGS,
     LDIF_TO_INCLUDE_GROUP_MODEL_MAPPINGS,
     LDIF_TO_USER_MODEL_MAPPINGS,
     OperationType,
 )
 from database import Base, Group, IncludeGroup, User
+from security_logging import OWASPLogger
+
+security_logger = OWASPLogger(appid=GLAUTH_UTILS_LOGGING_ID)
 
 LDIF_MODEL_MAPPINGS = {
     User: LDIF_TO_USER_MODEL_MAPPINGS,
@@ -108,6 +113,13 @@ class UserOperation(Operation):
         if record.custom_attributes:
             obj.custom_attributes = record.custom_attributes
 
+        security_logger.log_event(
+            event=f"authz_admin:user_created:{record.identifier}",
+            level=WARN,
+            description=f"User `{record.identifier}` was created",
+            user=record.identifier,
+        )
+
         session.add(obj)
 
     @op_label(OperationType.UPDATE)
@@ -125,9 +137,22 @@ class UserOperation(Operation):
                 **record.custom_attributes,
             }
 
+        security_logger.log_event(
+            event=f"authz_admin:user_updated:{record.identifier}",
+            level=WARN,
+            description=f"User `{record.identifier}` was updated",
+            user=record.identifier,
+        )
+
     @op_label(OperationType.DELETE)
     def delete(self, session: Session, record: Record) -> None:
         super().delete(session, record)
+        security_logger.log_event(
+            event=f"authz_admin:user_deleted:{record.identifier}",
+            level=WARN,
+            description=f"User `{record.identifier}` was deleted",
+            user=record.identifier,
+        )
 
     @op_label(OperationType.MOVE)
     def move(self, session: Session, record: Record) -> None:
@@ -136,6 +161,13 @@ class UserOperation(Operation):
 
         group = self.select(session, Group, Group.name == record.attributes.get("ou")).first()
         obj.group = group
+        security_logger.log_event(
+            event=f"authz_admin:user_moved:{record.identifier}",
+            level=WARN,
+            description=f"User `{record.identifier}` was moved to a different group",
+            group=group.name,
+            user=record.identifier,
+        )
 
 
 @op_method_register
@@ -152,13 +184,33 @@ class GroupOperation(Operation):
             case _:
                 return
 
+        security_logger.log_event(
+            event=f"authz_admin:group_created:{record.identifier}",
+            level=WARN,
+            description=f"Group `{record.identifier}` was created",
+            parent_group=record.attributes.get("parentGroup"),
+            group=record.identifier,
+        )
+
     @op_label(OperationType.UPDATE)
     def update(self, session: Session, record: Record) -> None:
         super().update(session, record)
+        security_logger.log_event(
+            event=f"authz_admin:group_updated:{record.identifier}",
+            level=WARN,
+            description=f"Group `{record.identifier}` was updated",
+            group=record.identifier,
+        )
 
     @op_label(OperationType.DELETE)
     def delete(self, session: Session, record: Record) -> None:
         super().delete(session, record)
+        security_logger.log_event(
+            event=f"authz_admin:group_deleted:{record.identifier}",
+            level=WARN,
+            description=f"Group `{record.identifier}` was deleted",
+            group=record.identifier,
+        )
 
     @op_label(OperationType.MOVE)
     def move(self, session: Session, record: Record) -> None:
@@ -177,6 +229,13 @@ class GroupOperation(Operation):
             IncludeGroup.child_group == group,
         ).first():
             association.parent_group = new_parent_group
+            security_logger.log_event(
+                event=f"authz_admin:group_updated:{record.identifier}",
+                level=WARN,
+                description=f"Changed parent of group `{record.identifier}`",
+                group=record.identifier,
+                parent_group=record.attributes.get("newParentGroup"),
+            )
             return
 
         include_group_record = Record(
@@ -200,6 +259,14 @@ class GroupOperation(Operation):
         for user in users:
             user.other_groups = user.other_groups | {str(group.gid_number)}
 
+        security_logger.log_event(
+            event=f"authz_admin:group_attached:{record.identifier}",
+            level=WARN,
+            description=f"Attached users to group `{record.identifier}`",
+            group=record.identifier,
+            uids=",".join(map(str, uid_numbers)),
+        )
+
     @op_label(OperationType.DETACH)
     def detach(self, session: Session, record: Record) -> None:
         if not (group := self.select(session, Group, Group.name == record.identifier).first()):
@@ -213,6 +280,14 @@ class GroupOperation(Operation):
         users = self.select(session, User, User.uid_number.in_(uid_numbers)).all()
         for user in users:
             user.other_groups = user.other_groups - {str(group.gid_number)}
+
+        security_logger.log_event(
+            event=f"authz_admin:group_detached:{record.identifier}",
+            level=WARN,
+            description=f"Detached users from group `{record.identifier}`",
+            group=record.identifier,
+            uids=",".join(map(str, uid_numbers)),
+        )
 
 
 OPERATIONS: Final[dict] = {
