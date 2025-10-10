@@ -72,7 +72,9 @@ async def test_deploy_dependencies(ops_test: OpsTest) -> None:
 
 @pytest.mark.skip_if_deployed
 @pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, initialize_database: None, local_charm: Path) -> None:
+async def test_build_and_deploy(
+    ops_test: OpsTest, initialize_database: None, local_charm: Path
+) -> None:
     await ops_test.model.deploy(
         entity_url=str(local_charm),
         application_name=GLAUTH_UTILS_APP,

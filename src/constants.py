@@ -6,6 +6,8 @@ from enum import Enum
 from re import Pattern
 from typing import Final
 
+GLAUTH_UTILS_LOGGING_ID: Final[str] = "identity_platform.glauth_utils_operator"
+
 AUXILIARY_INTEGRATION_NAME = "glauth-auxiliary"
 
 USER_IDENTIFIER_ATTRIBUTE: Final[str] = "cn"
