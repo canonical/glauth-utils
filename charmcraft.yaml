@@ -37,7 +37,7 @@ parts:
       - libldap2-dev
       - libsasl2-dev
       - libssl-dev
-      - rustc
-      - cargo
+      - "rustc-1.85"
+      - "cargo-1.85"
     charm-binary-python-packages:
       - psycopg[binary]
