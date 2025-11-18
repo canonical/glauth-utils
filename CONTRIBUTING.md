@@ -1,11 +1,12 @@
 # Contributing
 
 You can use the environments created by `tox` for development. It helps
-install `pre-commit` hooks and `mypy` type checker.
+install `pre-commit` hooks, `mypy` type checker, and all the dependencies
+required to run tests and analysis tools.
 
 ```shell
-tox -e dev
-source .tox/dev/bin/activate
+tox devenv
+source venv/bin/activate
 ```
 
 ## Testing
