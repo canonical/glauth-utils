@@ -22,8 +22,7 @@ jobs:
     name: CI
     uses: canonical/identity-team/.github/workflows/charm-pull-request.yaml@2a4ae518f9c792dcdf14d05f8d86e3d72e160d96 # v1.9.0
     with:
-      # TODO: Switch to true when glauth-utils is re-added to charmcraftcache-hub
-      use-charmcraftcache: false
+      use-charmcraftcache: true
       node-size: xlarge
       tox-unit-test-targets: "build-prerequisites,unit"
       tox-integration-test-targets: "build-prerequisites,integration"
