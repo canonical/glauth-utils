@@ -9,7 +9,7 @@ summary: |
 description: |
   A Juju charm to run utilities for the GLAuth Kubernetes Charmed Operator.
 links:
-  documentation: https://discourse.charmhub.io/t/13948
+  documentation: https://canonical-identity.readthedocs-hosted.com/reference/charms/glauth-utils
   source: https://github.com/canonical/glauth-utils
   issues: https://github.com/canonical/glauth-utils/issues
 
