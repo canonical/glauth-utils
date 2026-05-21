@@ -1,5 +1,5 @@
 ops >= 2.9.0
 psycopg[binary]
-pydantic ~=2.12.0
+pydantic ~=2.13.4
 python-ldap
 SQLAlchemy
