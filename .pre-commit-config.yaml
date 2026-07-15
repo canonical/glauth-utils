@@ -19,13 +19,13 @@ repos:
   hooks:
   - id: black
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v2.1.0
+  rev: v2.3.0
   hooks:
     - id: mypy
       args: ["--config-file", "pyproject.toml"]
       additional_dependencies:
         - types-PyYAML
 - repo: https://github.com/igorshubovych/markdownlint-cli
-  rev: v0.48.0
+  rev: v0.49.1
   hooks:
   - id: markdownlint
