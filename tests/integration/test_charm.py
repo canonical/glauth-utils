@@ -57,7 +57,7 @@ async def test_deploy_dependencies(ops_test: OpsTest) -> None:
         channel="latest/edge",
         trust=True,
     )
-    await ops_test.model.integrate(GLAUTH_APP, DB_APP)
+    await ops_test.model.integrate(f"{GLAUTH_APP}:pg-database", f"{DB_APP}:database")
     await ops_test.model.integrate(GLAUTH_APP, CERTIFICATE_PROVIDER_APP)
     await ops_test.model.integrate(f"{GLAUTH_APP}:ingress", f"{INGRESS_APP}:ingress-per-unit")
 
