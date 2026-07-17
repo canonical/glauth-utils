@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/canonical/glauth-utils/compare/v1.1.0...v1.1.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* ci permissions ([eff1d85](https://github.com/canonical/glauth-utils/commit/eff1d8546317bb3aa0a9ff4ee72c018813d7ec77))
+* ci permissions ([cd9b231](https://github.com/canonical/glauth-utils/commit/cd9b231885c266bf0387a5faf73f361eb11e8a36))
+
 ## [1.1.0](https://github.com/canonical/glauth-utils/compare/v1.0.0...v1.1.0) (2026-07-16)
 
 
