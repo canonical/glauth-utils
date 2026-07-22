@@ -4,12 +4,54 @@
 [project]
 name = "glauth-utils"
 version = "0.1.0"
-description = "A Charmed Operator for running GLAuth utilities on Kubnernetes"
-requires-python = ">=3.11"
+description = "A Charmed Operator for running GLAuth utilities on Kubernetes"
+requires-python = ">=3.10"
 readme = "README.md"
 license = {file = "LICENSE"}
+dependencies = [
+    "ops >= 2.9.0",
+    "psycopg[binary]",
+    "pydantic ~=2.13.4",
+    "python-ldap",
+    "SQLAlchemy",
+]
 
-dynamic = ["version"]
+[dependency-groups]
+fmt = [
+    "isort",
+    "ruff",
+]
+lint = [
+    "codespell",
+    "isort",
+    "ruff",
+    "tomli",
+]
+unit = [
+    "pytest",
+    "pytest-mock",
+    "coverage[toml]",
+]
+integration = [
+    "aiofiles",
+    "juju",
+    "psycopg[binary]",
+    "pytest",
+    "pytest-operator==0.43.2",
+]
+dev = [
+    "pre-commit",
+    "mypy",
+    "types-PyYAML",
+    "types-requests",
+    { include-group = "fmt" },
+    { include-group = "lint" },
+    { include-group = "unit" },
+    { include-group = "integration" },
+]
+
+[tool.uv]
+package = false
 
 # Testing tools configuration
 [tool.coverage.run]
