@@ -20,7 +20,7 @@ on:
 jobs:
   tests:
     name: CI
-    uses: canonical/identity-team/.github/workflows/charm-pull-request.yaml@83e6e76b28b0db96c133c16bbec121cba34a86db # v1.14.3
+    uses: canonical/identity-team/.github/workflows/charm-pull-request.yaml@867052c23843559a6044c8d9e7391af6589b6a2d # IAM-2282-support-multiple-bases
     with:
       use-charmcraftcache: false
       node-size: xlarge
