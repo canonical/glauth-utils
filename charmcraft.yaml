@@ -44,6 +44,6 @@ parts:
       - libldap2-dev
       - libsasl2-dev
       - libssl-dev
-      - "rustc-1.85"
-      - "cargo-1.85"
+      - rustc
+      - cargo
 
