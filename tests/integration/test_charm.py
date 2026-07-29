@@ -79,7 +79,6 @@ async def test_build_and_deploy(
         entity_url=str(local_charm),
         application_name=GLAUTH_UTILS_APP,
         trust=True,
-        series="jammy",
     )
     await ops_test.model.integrate(GLAUTH_UTILS_APP, GLAUTH_APP)
 
