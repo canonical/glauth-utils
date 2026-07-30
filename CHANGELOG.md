@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/canonical/glauth-utils/compare/v1.1.1...v1.2.0) (2026-07-30)
+
+
+### Features
+
+* support 26.04 build base ([8f4bdd5](https://github.com/canonical/glauth-utils/commit/8f4bdd5c01542cda5d45614a399c5fd7ad7ac004))
+* support 26.04 build base ([5636c64](https://github.com/canonical/glauth-utils/commit/5636c64cb2c7e822d05b7d0fcf7be1e1f99d026b))
+
 ## [1.1.1](https://github.com/canonical/glauth-utils/compare/v1.1.0...v1.1.1) (2026-07-17)
 
 
