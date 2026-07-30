@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/canonical/glauth-utils/compare/v1.2.1...v1.2.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* remove cargo and rustc deps ([f915367](https://github.com/canonical/glauth-utils/commit/f91536701836cc16b9bb383d3eaa9bb56fd0d0d8))
+* remove charmcraft deps ([4ae9c92](https://github.com/canonical/glauth-utils/commit/4ae9c927832e95f8afe0a4ecc6260a33c10828be))
+
 ## [1.2.1](https://github.com/canonical/glauth-utils/compare/v1.2.0...v1.2.1) (2026-07-30)
 
 
