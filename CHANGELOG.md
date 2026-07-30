@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/canonical/glauth-utils/compare/v1.2.0...v1.2.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* disable charmcraftcache on all workflows ([9c32187](https://github.com/canonical/glauth-utils/commit/9c321876cc7c99d1a9611b87bb71d42426be9b7e))
+* disable charmcraftcache on all workflows ([f981375](https://github.com/canonical/glauth-utils/commit/f981375a7a9971ed06ce9121c0abfa606805400d))
+
 ## [1.2.0](https://github.com/canonical/glauth-utils/compare/v1.1.1...v1.2.0) (2026-07-30)
 
 
