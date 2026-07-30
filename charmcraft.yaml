@@ -30,6 +30,8 @@ actions:
 platforms:
   ubuntu@22.04:amd64:
   ubuntu@22.04:arm64:
+  ubuntu@26.04:amd64:
+  ubuntu@26.04:arm64:
 
 parts:
   charm:
@@ -42,5 +44,6 @@ parts:
       - libldap2-dev
       - libsasl2-dev
       - libssl-dev
-      - "rustc-1.85"
-      - "cargo-1.85"
+      - rustc
+      - cargo
+
