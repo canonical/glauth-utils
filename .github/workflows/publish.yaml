@@ -31,7 +31,7 @@ permissions:
 jobs:
   publish:
     name: Publish Charm
-    uses: canonical/identity-team/.github/workflows/charm-publish.yaml@4452d1707af2dff9046222f9e7eaf4ea83758830 # IAM-2282-support-multiple-bases
+    uses: canonical/identity-team/.github/workflows/charm-publish.yaml@1bf335af1d939c8543e53d376dd49d79126c2cd3 # v1.15.0
     with:
       destination_channel: ${{ inputs.destination_channel}}
       source_branch: ${{ inputs.source_branch}}
