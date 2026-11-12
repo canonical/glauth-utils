@@ -10,7 +10,7 @@ on:
 jobs:
   release-lib:
     name: Release any bumped library
-    uses: canonical/identity-team/.github/workflows/charm-libs-release.yaml@1bf335af1d939c8543e53d376dd49d79126c2cd3 # v1.15.0
+    uses: canonical/identity-team/.github/workflows/charm-libs-release.yaml@00995831ff788db43992012900820edf7967305f # v1.19.2
     secrets:
       CHARMCRAFT_CREDENTIALS: ${{ secrets.CHARMCRAFT_CREDENTIALS }}
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
