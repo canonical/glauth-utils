@@ -3,18 +3,20 @@
 
 import functools
 import os
+import platform
 import re
-from base64 import b64decode
-from contextlib import contextmanager
+import secrets
+import subprocess
+from collections.abc import Callable, Generator
+from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
-import aiofiles
+import jubilant
 import ldap
 import psycopg
-import pytest_asyncio
+import pytest
 import yaml
-from pytest_operator.plugin import OpsTest
 
 METADATA = yaml.safe_load(Path("./charmcraft.yaml").read_text())
 CERTIFICATE_PROVIDER_APP = "self-signed-certificates"
@@ -28,9 +30,120 @@ BASE_DN = "dc=glauth,dc=com"
 BIND_DN = f"cn=serviceuser,ou=juju,{BASE_DN}"
 BIND_PASSWORD = "mysecret"
 
+StatusPredicate = Callable[[jubilant.Status], bool]
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add custom command-line options for model management and deployment control."""
+    parser.addoption(
+        "--keep-models",
+        "--no-teardown",
+        action="store_true",
+        dest="no_teardown",
+        default=False,
+        help="Keep the model after the test is finished.",
+    )
+    parser.addoption(
+        "--model",
+        action="store",
+        dest="model",
+        default=None,
+        help="The model to run the tests on.",
+    )
+    parser.addoption(
+        "--no-deploy",
+        "--no-setup",
+        action="store_true",
+        dest="no_setup",
+        default=False,
+        help="Skip deployment of the charm.",
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Register custom markers for test selection."""
+    config.addinivalue_line("markers", "setup: tests that setup some parts of the environment")
+    config.addinivalue_line(
+        "markers", "teardown: tests that teardown some parts of the environment."
+    )
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Modify collected test items based on command-line options."""
+    skip_setup = pytest.mark.skip(reason="no_setup provided")
+    skip_teardown = pytest.mark.skip(reason="no_teardown provided")
+    for item in items:
+        if config.getoption("no_setup") and "setup" in item.keywords:
+            item.add_marker(skip_setup)
+        if config.getoption("no_teardown") and "teardown" in item.keywords:
+            item.add_marker(skip_teardown)
+
+
+def juju_model_factory(model_name: str) -> tuple[jubilant.Juju, bool]:
+    """Create or attach to a Juju model configured for integration tests."""
+    juju = jubilant.Juju()
+    created = True
+    try:
+        juju.add_model(model_name, config={"logging-config": "<root>=INFO"})
+    except jubilant.CLIError as e:
+        if "already exists" not in e.stderr:
+            raise
+        created = False
+
+    juju.model = model_name
+
+    if created or os.getenv("CI"):
+        arch_map = {
+            "aarch64": "arm64",
+            "arm64": "arm64",
+            "x86_64": "amd64",
+            "amd64": "amd64",
+        }
+        host_arch = arch_map.get(platform.machine().lower(), "amd64")
+        juju.cli("set-model-constraints", f"arch={host_arch}")
+
+    return juju, created
+
+
+@pytest.fixture(scope="module")
+def juju(request: pytest.FixtureRequest) -> Generator[jubilant.Juju, None, None]:
+    """Create a temporary Juju model for integration tests."""
+    model_name = request.config.getoption("--model") or f"test-glauth-utils-{secrets.token_hex(4)}"
+    juju_, created = juju_model_factory(model_name)
+    juju_.wait_timeout = 10 * 60
+
+    try:
+        yield juju_
+    finally:
+        if request.session.testsfailed:
+            print(juju_.debug_log(limit=1000), end="")
+
+        no_teardown = bool(request.config.getoption("--no-teardown"))
+        keep_model = no_teardown or request.session.testsfailed > 0 or not created
+        if not keep_model:
+            with suppress(jubilant.CLIError):
+                juju_.destroy_model(
+                    model_name,
+                    destroy_storage=True,
+                    force=True,
+                    timeout=600,
+                )
+
+
+def all_active(*apps: str) -> StatusPredicate:
+    """Return a predicate that checks all given apps are active."""
+    return lambda status: jubilant.all_active(status, *apps)
+
+
+def any_error(*apps: str) -> StatusPredicate:
+    """Return a predicate that checks if any given app is in error."""
+    return lambda status: jubilant.any_error(status, *apps)
+
 
 @contextmanager
-def ldap_connection(uri: str, bind_dn: str, bind_password: str) -> ldap.ldapobject.LDAPObject:
+def ldap_connection(
+    uri: str, bind_dn: str, bind_password: str
+) -> Generator[ldap.ldapobject.LDAPObject, None, None]:
     conn = ldap.initialize(uri)
     try:
         conn.simple_bind_s(bind_dn, bind_password)
@@ -39,49 +152,53 @@ def ldap_connection(uri: str, bind_dn: str, bind_password: str) -> ldap.ldapobje
         conn.unbind_s()
 
 
-async def get_unit_data(ops_test: OpsTest, unit_name: str) -> dict:
-    show_unit_cmd = f"show-unit {unit_name}".split()
-    _, stdout, _ = await ops_test.juju(*show_unit_cmd)
-    cmd_output = yaml.safe_load(stdout)
-    return cmd_output[unit_name]
-
-
-async def get_integration_data(
-    ops_test: OpsTest, app_name: str, integration_name: str, unit_num: int = 0
-) -> Optional[dict]:
-    data = await get_unit_data(ops_test, f"{app_name}/{unit_num}")
+def get_integration_data(
+    juju: jubilant.Juju, app_name: str, integration_name: str, unit_num: int = 0
+) -> Optional[jubilant.unittypes.RelationData]:
+    unit_info = juju.show_unit(f"{app_name}/{unit_num}")
     return next(
-        (
-            integration
-            for integration in data["relation-info"]
-            if integration["endpoint"] == integration_name
-        ),
+        (rel for rel in unit_info.relation_info if rel.endpoint == integration_name),
         None,
     )
 
 
-async def get_app_integration_data(
-    ops_test: OpsTest,
+def get_app_integration_data(
+    juju: jubilant.Juju,
     app_name: str,
     integration_name: str,
     unit_num: int = 0,
 ) -> Optional[dict]:
-    data = await get_integration_data(ops_test, app_name, integration_name, unit_num)
-    return data["application-data"] if data else None
+    data = get_integration_data(juju, app_name, integration_name, unit_num)
+    if not data:
+        return None
+    if juju.version().major >= 4:
+        remote_unit = next(
+            (u for u in data.related_units if not u.startswith(f"{app_name}/")),
+            None,
+        )
+        if not remote_unit:
+            return None
+        remote_info = juju.show_unit(remote_unit)
+        rel = next(
+            (r for r in remote_info.relation_info if r.relation_id == data.relation_id),
+            None,
+        )
+        return rel.app_data if rel else None
+    return data.app_data
 
 
-@pytest_asyncio.fixture
-async def app_integration_data(ops_test: OpsTest) -> Callable:
-    return functools.partial(get_app_integration_data, ops_test)
+@pytest.fixture
+def app_integration_data(juju: jubilant.Juju) -> Callable:
+    return functools.partial(get_app_integration_data, juju)
 
 
-@pytest_asyncio.fixture
-async def ingress_per_unit_integration_data(app_integration_data: Callable) -> Optional[dict]:
-    return await app_integration_data(GLAUTH_APP, "ingress")
+@pytest.fixture
+def ingress_per_unit_integration_data(app_integration_data: Callable) -> Optional[dict]:
+    return app_integration_data(GLAUTH_APP, "ingress")
 
 
-@pytest_asyncio.fixture
-async def ingress_url(ingress_per_unit_integration_data: Optional[dict]) -> Optional[str]:
+@pytest.fixture
+def ingress_url(ingress_per_unit_integration_data: Optional[dict]) -> Optional[str]:
     if not ingress_per_unit_integration_data:
         return None
 
@@ -92,106 +209,92 @@ async def ingress_url(ingress_per_unit_integration_data: Optional[dict]) -> Opti
     return matched.group("ingress_url")
 
 
-@pytest_asyncio.fixture
-async def ldap_uri(ingress_url: Optional[str]) -> Optional[str]:
+@pytest.fixture
+def ldap_uri(ingress_url: Optional[str]) -> Optional[str]:
     return f"ldap://{ingress_url}" if ingress_url else None
 
 
-@pytest_asyncio.fixture
-async def database_integration_data(ops_test: OpsTest, app_integration_data: Callable) -> dict:
-    database_integration_data = await app_integration_data(GLAUTH_APP, "pg-database") or {}
-
-    db_credentials = await ops_test.model.list_secrets(
-        filter={"uri": database_integration_data["secret-user"]},
-        show_secrets=True,
-    )
-    db_credential = next(iter(db_credentials), None)
-    assert db_credential
-    decoded_db_credentials = {
-        field: b64decode(db_credential.value.data[field]).decode("utf-8")
-        for field in ("username", "password")
-    }
-
-    return {**database_integration_data, **decoded_db_credentials}
+@pytest.fixture
+def database_integration_data(juju: jubilant.Juju, app_integration_data: Callable) -> dict:
+    database_integration_data = app_integration_data(GLAUTH_APP, "pg-database") or {}
+    secret_uri = database_integration_data["secret-user"]
+    secret_content = juju.show_secret(secret_uri, reveal=True).content
+    return {**database_integration_data, **secret_content}
 
 
-@pytest_asyncio.fixture(scope="module")
-def run_action(ops_test: OpsTest) -> Callable:
-    async def _run_action(
-        application_name: str, action_name: str, **params: Any
-    ) -> dict[str, str]:
-        app = ops_test.model.applications[application_name]
-        action = await app.units[0].run_action(action_name, **params)
-        await action.wait()
+@pytest.fixture(scope="module")
+def run_action(juju: jubilant.Juju) -> Callable:
+    def _run_action(application_name: str, action_name: str, **params: Any) -> dict[str, str]:
+        action = juju.run(f"{application_name}/0", action_name, params=params)
         return action.results
 
     return _run_action
 
 
-@pytest_asyncio.fixture(scope="module")
-async def local_charm(ops_test: OpsTest) -> Path:
+@pytest.fixture(scope="session")
+def local_charm() -> Path:
     # in GitHub CI, charms are built with charmcraftcache and uploaded to $CHARM_PATH
-    charm = os.getenv("CHARM_PATH")
+    charm: str | Path | None = os.getenv("CHARM_PATH")
     if not charm:
-        # fall back to build locally - required when run outside of GitHub CI
-        charm = await ops_test.build_charm(".")
-    return charm
+        subprocess.run(["charmcraft", "pack"], check=True)
+        if not (charms := list(Path(".").glob(f"{GLAUTH_UTILS_APP}*.charm"))):
+            raise RuntimeError("Charm not found and build failed")
+        charm = max(charms, key=lambda p: p.stat().st_mtime).absolute()
+    return Path(charm)
 
 
-async def scp_ldif_file(ops_test: OpsTest, source: str) -> None:
-    app = ops_test.model.applications[GLAUTH_UTILS_APP]
-    scp_cmd = f"scp {source} {app.units[0].name}:/var/tmp".split()
-    await ops_test.juju(*scp_cmd)
+def scp_ldif_file(juju: jubilant.Juju, source: str) -> None:
+    juju.scp(source, f"{GLAUTH_UTILS_APP}/0:/var/tmp")
 
 
-async def apply_ldif(ops_test: OpsTest, run_action: Callable, ldif_file: str) -> None:
+def apply_ldif(juju: jubilant.Juju, run_action: Callable, ldif_file: str) -> None:
     target_path = f"/var/tmp/{ldif_file}"
-    await scp_ldif_file(ops_test, f"./tests/integration/ldif/{ldif_file}")
-    await run_action(GLAUTH_UTILS_APP, "apply-ldif", path=target_path)
+    scp_ldif_file(juju, f"./tests/integration/ldif/{ldif_file}")
+    run_action(GLAUTH_UTILS_APP, "apply-ldif", path=target_path)
 
 
-@pytest_asyncio.fixture
-async def apply_add_ldif(ops_test: OpsTest, run_action: Callable) -> None:
-    await apply_ldif(ops_test, run_action, "add.ldif")
+@pytest.fixture
+def apply_add_ldif(juju: jubilant.Juju, run_action: Callable) -> None:
+    apply_ldif(juju, run_action, "add.ldif")
 
 
-@pytest_asyncio.fixture
-async def apply_modify_ldif(ops_test: OpsTest, run_action: Callable) -> None:
-    await apply_ldif(ops_test, run_action, "modify.ldif")
+@pytest.fixture
+def apply_modify_ldif(juju: jubilant.Juju, run_action: Callable) -> None:
+    apply_ldif(juju, run_action, "modify.ldif")
 
 
-@pytest_asyncio.fixture
-async def apply_rename_ldif(ops_test: OpsTest, run_action: Callable) -> None:
-    await apply_ldif(ops_test, run_action, "rename.ldif")
+@pytest.fixture
+def apply_rename_ldif(juju: jubilant.Juju, run_action: Callable) -> None:
+    apply_ldif(juju, run_action, "rename.ldif")
 
 
-@pytest_asyncio.fixture
-async def apply_move_ldif(ops_test: OpsTest, run_action: Callable) -> None:
-    await apply_ldif(ops_test, run_action, "move.ldif")
+@pytest.fixture
+def apply_move_ldif(juju: jubilant.Juju, run_action: Callable) -> None:
+    apply_ldif(juju, run_action, "move.ldif")
 
 
-@pytest_asyncio.fixture
-async def apply_attach_ldif(ops_test: OpsTest, run_action: Callable) -> None:
-    await apply_ldif(ops_test, run_action, "attach.ldif")
+@pytest.fixture
+def apply_attach_ldif(juju: jubilant.Juju, run_action: Callable) -> None:
+    apply_ldif(juju, run_action, "attach.ldif")
 
 
-@pytest_asyncio.fixture
-async def apply_delete_ldif(ops_test: OpsTest, run_action: Callable) -> None:
-    await apply_ldif(ops_test, run_action, "delete.ldif")
+@pytest.fixture
+def apply_delete_ldif(juju: jubilant.Juju, run_action: Callable) -> None:
+    apply_ldif(juju, run_action, "delete.ldif")
 
 
-async def unit_address(ops_test: OpsTest, *, app_name: str, unit_num: int = 0) -> str:
-    status = await ops_test.model.get_status()
-    return status["applications"][app_name]["units"][f"{app_name}/{unit_num}"]["address"]
+def unit_address(juju: jubilant.Juju, *, app_name: str, unit_num: int = 0) -> str:
+    status = juju.status()
+    return status.apps[app_name].units[f"{app_name}/{unit_num}"].address
 
 
-@pytest_asyncio.fixture
-async def database_address(ops_test: OpsTest) -> str:
-    return await unit_address(ops_test, app_name=DB_APP)
+@pytest.fixture
+def database_address(juju: jubilant.Juju) -> str:
+    return unit_address(juju, app_name=DB_APP)
 
 
-@pytest_asyncio.fixture
-async def initialize_database(database_integration_data: dict, database_address: str) -> None:
+@pytest.fixture
+def initialize_database(database_integration_data: dict, database_address: str) -> None:
     assert database_integration_data, "database_integration_data should be ready"
 
     db_connection_params = {
@@ -202,10 +305,8 @@ async def initialize_database(database_integration_data: dict, database_address:
         "port": 5432,
     }
 
-    async with await psycopg.AsyncConnection.connect(**db_connection_params) as conn:
-        async with conn.cursor() as cursor:
-            async with aiofiles.open("tests/integration/db.sql", "rb") as f:
-                statements = await f.read()
-
-            await cursor.execute(statements)
-            await conn.commit()
+    statements = Path("tests/integration/db.sql").read_text()
+    with psycopg.Connection.connect(**db_connection_params) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(statements)
+        conn.commit()
