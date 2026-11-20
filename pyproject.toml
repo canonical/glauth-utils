@@ -33,11 +33,9 @@ unit = [
     "coverage[toml]",
 ]
 integration = [
-    "aiofiles",
-    "juju",
+    "jubilant",
     "psycopg[binary]",
     "pytest",
-    "pytest-operator==0.43.2",
 ]
 dev = [
     "pre-commit",
@@ -144,4 +142,4 @@ ignore_missing_imports = true
 
 # Ignore libraries that do not have type hint nor stubs
 [[tool.mypy.overrides]]
-module = ["ops.*", "pytest.*", "pytest_operator.*", "urllib3.*", "jinja2.*", "lightkube.*", "pytest_mock.*"]
+module = ["ops.*", "pytest.*", "urllib3.*", "jinja2.*", "lightkube.*", "pytest_mock.*"]
