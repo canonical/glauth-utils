@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+import jubilant
 import ldap
 import pytest
 from conftest import (
@@ -18,79 +19,72 @@ from conftest import (
     GLAUTH_UTILS_APP,
     INGRESS_APP,
     TRAEFIK_CHARM,
+    all_active,
+    any_error,
     ldap_connection,
 )
-from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_if_deployed
-@pytest.mark.abort_on_fail
-async def test_deploy_dependencies(ops_test: OpsTest) -> None:
-    await ops_test.model.deploy(
+@pytest.mark.setup
+def test_deploy_dependencies(juju: jubilant.Juju) -> None:
+    juju.deploy(
         CERTIFICATE_PROVIDER_APP,
         channel="latest/stable",
         trust=True,
     )
-    await ops_test.model.deploy(
+    juju.deploy(
         DB_APP,
         channel="14/stable",
         trust=True,
     )
-    (
-        await ops_test.model.deploy(
-            TRAEFIK_CHARM,
-            application_name=INGRESS_APP,
-            channel="latest/stable",
-            trust=True,
-        ),
+    juju.deploy(
+        TRAEFIK_CHARM,
+        app=INGRESS_APP,
+        channel="latest/stable",
+        trust=True,
     )
-    await ops_test.model.wait_for_idle(
-        apps=[CERTIFICATE_PROVIDER_APP, DB_APP, INGRESS_APP],
-        status="active",
-        raise_on_blocked=False,
+    juju.wait(
+        ready=all_active(CERTIFICATE_PROVIDER_APP, DB_APP, INGRESS_APP),
+        error=any_error(CERTIFICATE_PROVIDER_APP, DB_APP, INGRESS_APP),
         timeout=10 * 60,
     )
-    await ops_test.model.deploy(
+    juju.deploy(
         GLAUTH_APP,
         channel="latest/edge",
         trust=True,
     )
-    await ops_test.model.integrate(f"{GLAUTH_APP}:pg-database", f"{DB_APP}:database")
-    await ops_test.model.integrate(GLAUTH_APP, CERTIFICATE_PROVIDER_APP)
-    await ops_test.model.integrate(f"{GLAUTH_APP}:ingress", f"{INGRESS_APP}:ingress-per-unit")
+    juju.integrate(f"{GLAUTH_APP}:pg-database", f"{DB_APP}:database")
+    juju.integrate(GLAUTH_APP, CERTIFICATE_PROVIDER_APP)
+    juju.integrate(f"{GLAUTH_APP}:ingress", f"{INGRESS_APP}:ingress-per-unit")
 
-    await ops_test.model.wait_for_idle(
-        apps=[CERTIFICATE_PROVIDER_APP, DB_APP, GLAUTH_APP, INGRESS_APP],
-        status="active",
-        raise_on_error=False,
-        raise_on_blocked=False,
+    juju.wait(
+        ready=all_active(CERTIFICATE_PROVIDER_APP, DB_APP, GLAUTH_APP, INGRESS_APP),
+        error=any_error(CERTIFICATE_PROVIDER_APP, DB_APP, GLAUTH_APP, INGRESS_APP),
         timeout=10 * 60,
     )
 
 
-@pytest.mark.skip_if_deployed
-@pytest.mark.abort_on_fail
-async def test_build_and_deploy(
-    ops_test: OpsTest, initialize_database: None, local_charm: Path
+@pytest.mark.setup
+def test_build_and_deploy(
+    juju: jubilant.Juju, initialize_database: None, local_charm: Path
 ) -> None:
-    await ops_test.model.deploy(
-        entity_url=str(local_charm),
-        application_name=GLAUTH_UTILS_APP,
+    juju.deploy(
+        str(local_charm),
+        app=GLAUTH_UTILS_APP,
         trust=True,
     )
-    await ops_test.model.integrate(GLAUTH_UTILS_APP, GLAUTH_APP)
+    juju.integrate(GLAUTH_UTILS_APP, GLAUTH_APP)
 
-    await ops_test.model.wait_for_idle(
-        apps=[GLAUTH_UTILS_APP, GLAUTH_APP],
-        status="active",
-        raise_on_blocked=True,
+    juju.wait(
+        ready=all_active(GLAUTH_UTILS_APP, GLAUTH_APP),
+        error=any_error(GLAUTH_UTILS_APP, GLAUTH_APP),
         timeout=5 * 60,
     )
 
 
-async def test_added_entries(
+def test_added_entries(
     ldap_uri: Optional[str],
     apply_add_ldif: None,
 ) -> None:
@@ -131,7 +125,7 @@ async def test_added_entries(
     assert dn == f"cn=johndoe,ou=superheros,ou=users,{BASE_DN}"
 
 
-async def test_modify_entries(
+def test_modify_entries(
     ldap_uri: Optional[str],
     apply_modify_ldif: None,
 ) -> None:
@@ -164,7 +158,7 @@ async def test_modify_entries(
     assert "email" not in attrs
 
 
-async def test_rename_entries(
+def test_rename_entries(
     ldap_uri: Optional[str],
     apply_rename_ldif: None,
 ) -> None:
@@ -181,7 +175,7 @@ async def test_rename_entries(
     assert dn == f"cn=new_rename,ou=rename,ou=users,{BASE_DN}"
 
 
-async def test_move_entries(
+def test_move_entries(
     ldap_uri: Optional[str],
     apply_move_ldif: None,
 ) -> None:
@@ -210,7 +204,7 @@ async def test_move_entries(
     assert dn == f"cn=move,ou=sub,ou=users,{BASE_DN}"
 
 
-async def test_attach_entries(
+def test_attach_entries(
     ldap_uri: Optional[str],
     apply_attach_ldif: None,
 ) -> None:
@@ -244,7 +238,7 @@ async def test_attach_entries(
     assert attrs["memberOf"] == [b"ou=primary,ou=groups,dc=glauth,dc=com"]
 
 
-async def test_delete_entries(
+def test_delete_entries(
     ldap_uri: Optional[str],
     apply_delete_ldif: None,
 ) -> None:
