@@ -38,6 +38,8 @@ def test_deploy_dependencies(juju: jubilant.Juju) -> None:
         DB_APP,
         channel="14/stable",
         trust=True,
+        # TODO: remove force=True once postgresql-k8s publishes Juju 4 support
+        force=True,
     )
     juju.deploy(
         TRAEFIK_CHARM,
