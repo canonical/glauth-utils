@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3](https://github.com/canonical/glauth-utils/compare/v1.2.2...v1.2.3) (2026-11-28)
+
+
+### Bug Fixes
+
+* **deps:** update dependency pydantic to ~=2.14.4 ([71add37](https://github.com/canonical/glauth-utils/commit/71add37a1bbd24d3454e1aa351e8889782f0eaa2))
+* **deps:** update dependency pydantic to ~=2.14.4 ([fc23bfb](https://github.com/canonical/glauth-utils/commit/fc23bfbd943f9f80f752f710128bbe9be43451ad))
+
 ## [1.2.2](https://github.com/canonical/glauth-utils/compare/v1.2.1...v1.2.2) (2026-07-30)
 
 
